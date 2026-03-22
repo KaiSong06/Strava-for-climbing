@@ -1,12 +1,13 @@
+import { useEffect } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
+import { useAuthStore } from '@/src/stores/authStore';
 
 const queryClient = new QueryClient();
 
@@ -28,7 +29,6 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
   }, [error]);
@@ -46,14 +46,40 @@ export default function RootLayout() {
   return <RootLayoutNav />;
 }
 
+/** Watches auth state and redirects between (auth) and (tabs) stacks. */
+function AuthGate() {
+  const router = useRouter();
+  const segments = useSegments();
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const hasHydrated = useAuthStore((s) => s._hasHydrated);
+
+  useEffect(() => {
+    // Wait until SecureStore finishes loading persisted tokens
+    if (!hasHydrated) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+
+    if (!accessToken && !inAuthGroup) {
+      router.replace('/(auth)/login');
+    } else if (accessToken && inAuthGroup) {
+      router.replace('/(tabs)');
+    }
+  }, [accessToken, hasHydrated, segments, router]);
+
+  return null;
+}
+
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <AuthGate />
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="follow-list" options={{ title: 'Follow List' }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
         </Stack>
       </ThemeProvider>

@@ -9,6 +9,18 @@ export interface User {
   created_at: string;
 }
 
+/** Returned by GET /users/me and GET /users/:username */
+export interface UserProfile extends User {
+  home_gym_name: string | null;
+  follower_count: number;
+  following_count: number;
+}
+
+/** Returned by auth endpoints and GET /users/me (includes email) */
+export interface AuthUser extends UserProfile {
+  email: string;
+}
+
 // ─── Gyms ─────────────────────────────────────────────────────────────────────
 
 export interface Gym {
