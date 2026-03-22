@@ -14,7 +14,7 @@ Social bouldering app for iOS and Android. Users log climbs, follow friends, and
 **Backend API**: Node.js + Express + TypeScript
 **Database**: PostgreSQL with pgvector extension (similarity search)
 **Object storage**: S3-compatible (photos, 3D models)
-**Vision pipeline**: Python + FastAPI (separate service, async) — **currently a stub; pipeline stages not yet implemented**
+**Vision pipeline**: Python + FastAPI (separate service, async) — pipeline stages implemented; depth estimation (Stage 6 / MiDaS) is TODO/skipped for MVP
 **Job queue**: BullMQ (Redis-backed) — vision pipeline runs async, never in-request
 **Auth**: JWT + refresh tokens
 
@@ -44,12 +44,12 @@ cd mobile && npx expo start --android  # Android emulator
 # API
 cd api && npm run dev              # ts-node-dev, port 3001
 cd api && npm run worker:vision    # run stub vision worker (separate process)
-cd api && npm run test             # Jest (all tests)
+cd api && npm test                 # Jest (all tests — no test files written yet)
 cd api && npx jest --testPathPattern=<pattern>   # run a single test file
 
-# Vision service
+# Vision service (models load at startup — allow ~10s cold start)
 cd vision && uvicorn main:app --reload --port 8000
-python vision/workers/vision_worker.py  # run worker process separately
+# Note: no separate Python worker process — the TypeScript BullMQ worker calls POST /process
 
 # Database
 cd api && npm run db:migrate   # run pending migrations
@@ -66,6 +66,7 @@ cd api && npm run db:seed      # seed gyms + test users
 - `JWT_SECRET` — secret for signing access tokens
 - `AWS_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_ENDPOINT` — S3-compatible object storage
 - `PORT` — defaults to `3001`
+- `VISION_SERVICE_URL` — base URL of the Python vision service (e.g. `http://localhost:8000`); required by the BullMQ worker
 
 **Mobile** (`mobile/.env`):
 - `EXPO_PUBLIC_API_URL` — backend URL (e.g. `http://localhost:3001`); must have `EXPO_PUBLIC_` prefix to be exposed to the client
@@ -96,7 +97,7 @@ users           id, username, display_name, avatar_url, home_gym_id
 gyms            id, name, city, lat, lng, default_retirement_days
 problems        id, gym_id, colour, hold_vector, model_url, status, consensus_grade, first_upload_at, retired_at
 ascents         id, user_id, problem_id, type (flash|send|attempt), user_grade, rating, visibility, logged_at
-uploads         id, user_id, problem_id, photo_urls[], processing_status, similarity_score
+uploads         id, user_id, problem_id, photo_urls[], processing_status (pending|processing|awaiting_confirmation|complete|matched|unmatched|failed), similarity_score
 follows         follower_id, following_id
 match_disputes  id, upload_id, reported_by, status, votes_confirm, votes_split
 refresh_tokens  id, user_id, token_hash (indexed), expires_at
@@ -108,7 +109,7 @@ Key shared types beyond the tables: `FeedItem` (ascent + problem + user + gym ag
 
 ## Code style
 
-- TypeScript strict mode everywhere in `/api` and `/mobile`. No `any`.
+- TypeScript strict mode everywhere in `/api` and `/mobile`. No `any`. Also enforces `noUnusedLocals`, `noUnusedParameters`, and `noImplicitReturns` — remove unused variables/params rather than prefixing with `_`.
 - Named exports only — no default exports except screen components in React Native.
 - React Native: functional components with hooks. No class components.
 - API routes: thin controllers, logic in service layer (`/services`). Never put business logic in route handlers.
@@ -128,6 +129,7 @@ Key shared types beyond the tables: `FeedItem` (ascent + problem + user + gym ag
 - **Auth store**: `mobile/src/stores/authStore.ts` — Zustand store persisted to `SecureStore`. Check `_hasHydrated` before reading auth state (the root layout gates navigation on this).
 - **Follow store**: `mobile/src/stores/followStore.ts` — Zustand store for follow state.
 - **Components**: `mobile/src/components/` — `FeedCard` (renders a single feed item), `FollowButton` (follow/unfollow toggle).
+- **Upload service**: `mobile/src/services/uploadService.ts` — handles photo selection and multipart upload to the API.
 - **Shared types**: Import from `shared/types.ts` (not a published package; reference by relative path or configure the path in tsconfig).
 
 ---
@@ -135,8 +137,9 @@ Key shared types beyond the tables: `FeedItem` (ascent + problem + user + gym ag
 ## Gotchas
 
 - pgvector ANN queries require the `vector` extension to be enabled: `CREATE EXTENSION IF NOT EXISTS vector;` — this is included in `db/migrations/001_initial_schema.sql` but must exist before migrations run.
-- The vision pipeline uses MiDaS for depth estimation and SAM ViT-B for segmentation. These models are heavy — do NOT run them in the API process. They belong in `/vision` only. Models are loaded **lazily** (not at startup) to keep the FastAPI service boot fast.
+- The vision pipeline uses SAM ViT-B for segmentation and MiDaS small for depth estimation (depth is TODO/skipped for MVP). Models are heavy — do NOT run them in the API process. They belong in `/vision` only. Models load **at startup** via the FastAPI `lifespan` hook (cold start ~10s). Before running the vision service, download model weights into `vision/models/`: `curl -L -o vision/models/sam_vit_b_01ec64.pth https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth` (~375 MB). MiDaS is auto-cached by `torch.hub` on first run.
 - Expo managed workflow — avoid bare React Native modules unless absolutely necessary. Check Expo SDK compatibility before adding native deps.
 - `hold_vector` length varies per problem (2 floats per hold). pgvector requires fixed-dimension vectors — pad all vectors to 200 dims (100 holds max, `vector(200)`) with zeros before storing.
 - For matching, sort hold centroids by y-desc before vectorising so ordering is consistent across uploads of the same problem.
 - BullMQ job retries: 3 attempts, exponential backoff starting at 5s. Completed jobs kept for 100, failed for 500.
+- The pgvector IVFFlat index (`idx_problems_hold_vector`, migration 004) uses `lists = 100`, tuned for up to ~10k active problems per gym. Pre-filtering by `gym_id + colour` (via `idx_problems_gym_colour`) is required before ANN queries to keep the index effective.

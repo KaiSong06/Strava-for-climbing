@@ -1,8 +1,6 @@
 /**
- * Stub vision worker — simulates the async pipeline so the full UI flow works end-to-end.
- *
- * Phase 4b: replace this file with a real HTTP call to the Python FastAPI service.
- * The job payload (VisionJobData) and upload table updates must stay identical.
+ * Vision worker — dequeues BullMQ jobs, calls the Python vision service,
+ * runs pgvector similarity search, and updates the upload row.
  *
  * Run: cd api && npm run worker:vision
  */
@@ -11,40 +9,117 @@ import { Worker } from 'bullmq';
 import { redisConnection, VisionJobData } from './queue';
 import { pool } from '../db/pool';
 
+if (!process.env['VISION_SERVICE_URL']) {
+  throw new Error('VISION_SERVICE_URL env var is required');
+}
+const VISION_SERVICE_URL = process.env['VISION_SERVICE_URL'];
+
+// Mirror the thresholds from CLAUDE.md / vision/.env
+const SIMILARITY_THRESHOLD_AUTO = parseFloat(process.env['SIMILARITY_THRESHOLD_AUTO'] ?? '0.92');
+const SIMILARITY_THRESHOLD_CONFIRM = parseFloat(process.env['SIMILARITY_THRESHOLD_CONFIRM'] ?? '0.75');
+
+interface VisionResult {
+  hold_vector: number[];
+  hold_count: number;
+  wall_bbox: { x: number; y: number; w: number; h: number };
+  debug_image_url: string | null;
+}
+
 const worker = new Worker<VisionJobData>(
   'vision',
   async (job) => {
-    const { uploadId } = job.data;
+    const { uploadId, gymId, colour, photoUrls } = job.data;
 
-    // 1. Mark as processing
+    // ── 1. Mark as processing ────────────────────────────────────────────────
     await pool.query(
       `UPDATE uploads SET processing_status = 'processing'::processing_status WHERE id = $1`,
       [uploadId],
     );
 
-    // 2. Simulate processing time
-    await new Promise<void>((resolve) => setTimeout(resolve, 3_000));
+    // ── 2. Call vision service ───────────────────────────────────────────────
+    const response = await fetch(`${VISION_SERVICE_URL}/process`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        upload_id: uploadId,
+        photo_urls: photoUrls,
+        colour,
+        gym_id: gymId,
+      }),
+      signal: AbortSignal.timeout(120_000), // 2-min timeout
+    });
 
-    // 3. Generate fake hold_vector (20 random floats in [0, 1])
-    const holdVector = Array.from({ length: 20 }, () => Math.random());
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      throw new Error(`Vision service responded ${response.status}: ${body}`);
+    }
 
-    // 4. Update upload with stub results
+    const result = (await response.json()) as VisionResult;
+
+    // ── 3. Persist hold_vector on the upload row ─────────────────────────────
     await pool.query(
-      `UPDATE uploads
-       SET processing_status = 'awaiting_confirmation'::processing_status,
-           similarity_score   = 0.50,
-           hold_vector        = $2::jsonb
-       WHERE id = $1`,
-      [uploadId, JSON.stringify(holdVector)],
+      `UPDATE uploads SET hold_vector = $2::jsonb WHERE id = $1`,
+      [uploadId, JSON.stringify(result.hold_vector)],
     );
 
-    console.log(`[vision-stub] Processed upload ${uploadId}`);
+    // ── 4. pgvector cosine similarity search ────────────────────────────────
+    // Pre-filter by gym_id + colour before ANN (shrinks candidate set, keeps index fast).
+    // <=> returns cosine distance [0, 2]; similarity = 1 - distance.
+    const vectorLiteral = `[${result.hold_vector.join(',')}]`;
+    const { rows: candidates } = await pool.query<{ id: string; score: number }>(
+      `SELECT id, (1 - (hold_vector <=> $1::vector))::float AS score
+       FROM problems
+       WHERE gym_id = $2 AND colour = $3 AND status = 'active'
+       ORDER BY hold_vector <=> $1::vector
+       LIMIT 5`,
+      [vectorLiteral, gymId, colour],
+    );
+
+    const topScore = candidates[0]?.score ?? 0;
+    const topProblemId = candidates[0]?.id ?? null;
+
+    // ── 5. Apply thresholds and update upload ────────────────────────────────
+    if (topScore >= SIMILARITY_THRESHOLD_AUTO && topProblemId !== null) {
+      // Auto-match: link to existing problem without user confirmation
+      await pool.query(
+        `UPDATE uploads
+         SET processing_status = 'matched'::processing_status,
+             similarity_score   = $2,
+             problem_id         = $3
+         WHERE id = $1`,
+        [uploadId, topScore, topProblemId],
+      );
+      console.log(`[vision] auto-matched upload ${uploadId} → problem ${topProblemId} (score=${topScore.toFixed(3)})`);
+    } else {
+      // Confirm or new problem — mobile polls status and shows confirmation UI.
+      // similarity_score < SIMILARITY_THRESHOLD_CONFIRM means no plausible match;
+      // the confirm screen will pre-select "new problem".
+      await pool.query(
+        `UPDATE uploads
+         SET processing_status = 'awaiting_confirmation'::processing_status,
+             similarity_score   = $2
+         WHERE id = $1`,
+        [uploadId, topScore],
+      );
+      const label = topScore >= SIMILARITY_THRESHOLD_CONFIRM ? 'confirm-needed' : 'new-problem';
+      console.log(`[vision] ${label} upload ${uploadId} (score=${topScore.toFixed(3)})`);
+    }
   },
   { connection: redisConnection },
 );
 
-worker.on('failed', (job, err) => {
-  console.error(`[vision-stub] Job ${job?.id ?? '?'} failed:`, err.message);
+worker.on('failed', async (job, err) => {
+  console.error(`[vision] job ${job?.id ?? '?'} failed:`, err.message);
+  if (job?.data.uploadId) {
+    await pool
+      .query(
+        `UPDATE uploads SET processing_status = 'failed'::processing_status WHERE id = $1`,
+        [job.data.uploadId],
+      )
+      .catch((dbErr: unknown) => {
+        console.error('[vision] failed to mark upload as failed:', (dbErr as Error).message);
+      });
+  }
 });
 
-console.log('[vision-stub] Worker started, listening on queue "vision"');
+console.log('[vision] worker started, listening on queue "vision"');
