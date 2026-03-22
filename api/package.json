@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "worker:vision": "ts-node-dev --respawn --transpile-only src/jobs/visionWorker.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "jest",
@@ -14,11 +15,13 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1014.0",
+    "@types/multer": "^2.1.0",
     "bcrypt": "^5.1.1",
     "bullmq": "^5.4.3",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
+    "multer": "^2.1.1",
     "pg": "^8.11.5",
     "pgvector": "^0.2.0",
     "zod": "^3.23.8"

@@ -42,8 +42,9 @@ cd mobile && npx expo start --ios      # iOS simulator
 cd mobile && npx expo start --android  # Android emulator
 
 # API
-cd api && npm run dev          # ts-node-dev, port 3001
-cd api && npm run test         # Jest (all tests)
+cd api && npm run dev              # ts-node-dev, port 3001
+cd api && npm run worker:vision    # run stub vision worker (separate process)
+cd api && npm run test             # Jest (all tests)
 cd api && npx jest --testPathPattern=<pattern>   # run a single test file
 
 # Vision service

@@ -64,6 +64,8 @@ export interface Ascent {
   type: AscentType;
   user_grade: string | null;
   rating: number | null; // 1–5
+  notes: string | null;
+  video_url: string | null;
   visibility: AscentVisibility;
   logged_at: string;
   created_at: string;
@@ -71,7 +73,14 @@ export interface Ascent {
 
 // ─── Uploads ──────────────────────────────────────────────────────────────────
 
-export type ProcessingStatus = 'pending' | 'processing' | 'matched' | 'unmatched' | 'failed';
+export type ProcessingStatus =
+  | 'pending'
+  | 'processing'
+  | 'awaiting_confirmation'
+  | 'complete'
+  | 'matched'
+  | 'unmatched'
+  | 'failed';
 
 export interface Upload {
   id: string;
