@@ -1,0 +1,8 @@
+{
+  "name": "@crux/shared",
+  "version": "0.0.1",
+  "description": "Shared TypeScript types for Crux",
+  "main": "types.ts",
+  "license": "UNLICENSED",
+  "private": true
+}
