@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { requireAuth } from '../middleware/auth';
+import { requireAuth, optionalAuth } from '../middleware/auth';
 import * as userService from '../services/userService';
+import * as feedService from '../services/feedService';
 
 export const usersRouter = Router();
 
@@ -25,6 +26,28 @@ usersRouter.patch('/me', requireAuth, async (req, res, next) => {
     const body = patchMeSchema.parse(req.body);
     const profile = await userService.updateMe(req.user!.userId, body);
     res.json(profile);
+  } catch (err) {
+    next(err);
+  }
+});
+
+const ascentPaginationSchema = z.object({
+  cursor: z.string().uuid().optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+// GET /users/:username/ascents — paginated ascents; visibility depends on viewer
+usersRouter.get('/:username/ascents', optionalAuth, async (req, res, next) => {
+  try {
+    const { cursor, limit } = ascentPaginationSchema.parse(req.query);
+    const target = await userService.getByUsername(req.params['username']!);
+    const result = await feedService.getUserAscents(
+      target.id,
+      req.user?.userId,
+      cursor,
+      limit,
+    );
+    res.json(result);
   } catch (err) {
     next(err);
   }

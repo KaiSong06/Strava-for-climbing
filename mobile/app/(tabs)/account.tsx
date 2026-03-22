@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -16,12 +16,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Text, View } from '@/components/Themed';
 import { api, ApiError } from '@/src/lib/api';
 import { useAuthStore } from '@/src/stores/authStore';
+import { useFollowStore } from '@/src/stores/followStore';
 import type { AuthUser, Gym } from '../../../shared/types';
 
 export default function AccountScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { logout, updateUser } = useAuthStore();
+  const { load: loadFollowing, reset: resetFollowing } = useFollowStore();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editDisplayName, setEditDisplayName] = useState('');
@@ -36,6 +38,13 @@ export default function AccountScreen() {
     queryKey: ['users', 'me'],
     queryFn: () => api.get<AuthUser>('/users/me'),
   });
+
+  // Load following IDs into followStore once profile is available
+  useEffect(() => {
+    if (profile?.username) {
+      void loadFollowing(profile.username);
+    }
+  }, [profile?.username, loadFollowing]);
 
   const { data: gymsData } = useQuery<{ data: Gym[] }>({
     queryKey: ['gyms'],
@@ -105,6 +114,7 @@ export default function AccountScreen() {
         text: 'Sign out',
         style: 'destructive',
         onPress: () => {
+          resetFollowing();
           logout();
           // Auth gate in _layout.tsx handles redirect to login
         },
@@ -181,14 +191,24 @@ export default function AccountScreen() {
       <View style={styles.statsRow}>
         <Pressable
           style={styles.statItem}
-          onPress={() => router.push('/follow-list')}>
+          onPress={() =>
+            router.push({
+              pathname: '/follow-list',
+              params: { mode: 'followers', username: profile.username },
+            })
+          }>
           <Text style={styles.statNumber}>{profile.follower_count}</Text>
           <Text style={styles.statLabel}>Followers</Text>
         </Pressable>
         <View style={styles.statDivider} />
         <Pressable
           style={styles.statItem}
-          onPress={() => router.push('/follow-list')}>
+          onPress={() =>
+            router.push({
+              pathname: '/follow-list',
+              params: { mode: 'following', username: profile.username },
+            })
+          }>
           <Text style={styles.statNumber}>{profile.following_count}</Text>
           <Text style={styles.statLabel}>Following</Text>
         </Pressable>

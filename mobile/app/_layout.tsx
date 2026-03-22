@@ -80,6 +80,9 @@ function RootLayoutNav() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="follow-list" options={{ title: 'Follow List' }} />
+          <Stack.Screen name="profile/[username]" options={{ title: '' }} />
+          <Stack.Screen name="problem/[id]" options={{ title: 'Problem' }} />
+          <Stack.Screen name="feed/gym" options={{ title: 'Gym Activity' }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
         </Stack>
       </ThemeProvider>

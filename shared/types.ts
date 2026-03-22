@@ -105,6 +105,23 @@ export interface MatchDispute {
   created_at: string;
 }
 
+// ─── Feed ─────────────────────────────────────────────────────────────────────
+
+export interface FeedItem {
+  id: string;
+  logged_at: string;
+  type: AscentType;
+  user: Pick<User, 'id' | 'username' | 'display_name' | 'avatar_url'>;
+  problem: {
+    id: string;
+    colour: string;
+    consensus_grade: string | null;
+    gym: Pick<Gym, 'id' | 'name'>;
+  };
+  user_grade: string | null;
+  rating: number | null;
+}
+
 // ─── API response helpers ─────────────────────────────────────────────────────
 
 export interface ApiError {

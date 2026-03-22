@@ -28,7 +28,7 @@ Social bouldering app for iOS and Android. Users log climbs, follow friends, and
 /vision          Python FastAPI vision pipeline service
 /shared          Shared TypeScript types (consumed by mobile + api)
 /db              Migrations (pg-migrate), seed scripts
-/docs            Specs, ADRs, data model diagrams (files not yet created)
+/docs            Specs, ADRs, SQL query references
 ```
 
 ---
@@ -43,7 +43,6 @@ cd mobile && npx expo start --android  # Android emulator
 
 # API
 cd api && npm run dev          # ts-node-dev, port 3001
-cd api && npm run migrate      # run pending migrations
 cd api && npm run test         # Jest (all tests)
 cd api && npx jest --testPathPattern=<pattern>   # run a single test file
 
@@ -63,6 +62,9 @@ cd api && npm run db:seed      # seed gyms + test users
 **API** (`api/.env`):
 - `DATABASE_URL` — PostgreSQL connection string
 - `REDIS_URL` — Redis connection string (e.g. `redis://localhost:6379`)
+- `JWT_SECRET` — secret for signing access tokens
+- `AWS_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_ENDPOINT` — S3-compatible object storage
+- `PORT` — defaults to `3001`
 
 **Mobile** (`mobile/.env`):
 - `EXPO_PUBLIC_API_URL` — backend URL (e.g. `http://localhost:3001`); must have `EXPO_PUBLIC_` prefix to be exposed to the client
@@ -96,7 +98,10 @@ ascents         id, user_id, problem_id, type (flash|send|attempt), user_grade, 
 uploads         id, user_id, problem_id, photo_urls[], processing_status, similarity_score
 follows         follower_id, following_id
 match_disputes  id, upload_id, reported_by, status, votes_confirm, votes_split
+refresh_tokens  id, user_id, token_hash (indexed), expires_at
 ```
+
+Key shared types beyond the tables: `FeedItem` (ascent + problem + user + gym aggregated for feed display), `PaginatedResponse<T>` (data[], cursor, has_more), `UserProfile` (User + follower/following counts + home_gym_name).
 
 ---
 
@@ -106,6 +111,8 @@ match_disputes  id, upload_id, reported_by, status, votes_confirm, votes_split
 - Named exports only — no default exports except screen components in React Native.
 - React Native: functional components with hooks. No class components.
 - API routes: thin controllers, logic in service layer (`/services`). Never put business logic in route handlers.
+- Input validation: use Zod in route handlers before calling services. The global `errorHandler` also catches `ZodError` and returns a 400.
+- Two auth middlewares in `api/src/middleware/auth.ts`: `requireAuth` (rejects with 401 if no/invalid token, attaches `req.user`) and `optionalAuth` (attaches `req.user` if a valid Bearer token is present, never rejects — use on public routes where auth enriches but isn't required). Import and apply per-route, not globally.
 - Errors: throw `AppError` (from `api/src/middleware/errorHandler.ts`) in services; the global `errorHandler` middleware catches it and returns `{ error: { code, message } }`.
 - Never commit `.env` files. Use `.env.example` to document required vars.
 
@@ -116,7 +123,10 @@ match_disputes  id, upload_id, reported_by, status, votes_confirm, votes_split
 - **Routing**: Expo Router (file-based). Screens live in `mobile/app/`. The `@/` path alias maps to the `mobile/` root.
 - **Server state**: TanStack React Query — use for all API calls.
 - **Client state**: Zustand — use for global UI/auth state.
-- **API client**: `mobile/src/lib/api.ts` exports `api.get/post/patch/delete`. Always use this instead of raw `fetch`. It reads `EXPO_PUBLIC_API_URL` and throws `ApiError` on non-2xx responses.
+- **API client**: `mobile/src/lib/api.ts` exports `api.get/post/patch/delete`. Always use this instead of raw `fetch`. It reads `EXPO_PUBLIC_API_URL`, auto-attaches the Bearer token, handles 401s by refreshing the token (deduplicating concurrent refresh attempts), and throws `ApiError` on non-2xx responses.
+- **Auth store**: `mobile/src/stores/authStore.ts` — Zustand store persisted to `SecureStore`. Check `_hasHydrated` before reading auth state (the root layout gates navigation on this).
+- **Follow store**: `mobile/src/stores/followStore.ts` — Zustand store for follow state.
+- **Components**: `mobile/src/components/` — `FeedCard` (renders a single feed item), `FollowButton` (follow/unfollow toggle).
 - **Shared types**: Import from `shared/types.ts` (not a published package; reference by relative path or configure the path in tsconfig).
 
 ---

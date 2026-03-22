@@ -16,6 +16,22 @@ declare global {
   }
 }
 
+/** Attaches req.user if a valid Bearer token is present; never rejects the request. */
+export const optionalAuth: RequestHandler = (req, _res, next) => {
+  const header = req.headers['authorization'];
+  if (!header?.startsWith('Bearer ')) return next();
+  const token = header.slice(7);
+  const secret = process.env['JWT_SECRET'];
+  if (!secret) return next();
+  try {
+    const payload = jwt.verify(token, secret) as JwtPayload;
+    req.user = payload;
+  } catch {
+    // invalid/expired — continue unauthenticated
+  }
+  next();
+};
+
 export const requireAuth: RequestHandler = (req, _res, next) => {
   const header = req.headers['authorization'];
   if (!header?.startsWith('Bearer ')) {
