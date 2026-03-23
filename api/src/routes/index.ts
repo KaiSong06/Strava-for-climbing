@@ -11,6 +11,7 @@ import { problemsRouter } from './problems';
 import { disputesRouter } from './disputes';
 import { searchRouter } from './search';
 import { internalRouter } from './internal';
+import { pushTokensRouter } from './pushTokens';
 
 export const router = Router();
 
@@ -26,3 +27,4 @@ router.use('/problems', problemsRouter);
 router.use('/disputes', disputesRouter);
 router.use('/search', searchRouter);
 router.use('/internal', internalRouter);
+router.use('/push-tokens', pushTokensRouter);

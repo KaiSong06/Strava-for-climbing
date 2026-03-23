@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
+import * as Sentry from '@sentry/node';
 
 export class AppError extends Error {
   constructor(
@@ -31,6 +32,7 @@ export function errorHandler(
     return;
   }
 
+  Sentry.captureException(err);
   console.error('[unhandled error]', err);
   res.status(500).json({
     error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred.' },

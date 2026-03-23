@@ -8,6 +8,7 @@ import 'dotenv/config';
 import { Worker } from 'bullmq';
 import { redisConnection, VisionJobData } from './queue';
 import { pool } from '../db/pool';
+import * as pushService from '../services/pushService';
 
 if (!process.env['VISION_SERVICE_URL']) {
   throw new Error('VISION_SERVICE_URL env var is required');
@@ -31,10 +32,11 @@ const worker = new Worker<VisionJobData>(
     const { uploadId, gymId, colour, photoUrls } = job.data;
 
     // ── 1. Mark as processing ────────────────────────────────────────────────
-    await pool.query(
-      `UPDATE uploads SET processing_status = 'processing'::processing_status WHERE id = $1`,
+    const { rows: uploadRows } = await pool.query<{ user_id: string }>(
+      `UPDATE uploads SET processing_status = 'processing'::processing_status WHERE id = $1 RETURNING user_id`,
       [uploadId],
     );
+    const userId = uploadRows[0]?.user_id;
 
     // ── 2. Call vision service ───────────────────────────────────────────────
     const response = await fetch(`${VISION_SERVICE_URL}/process`, {
@@ -90,6 +92,9 @@ const worker = new Worker<VisionJobData>(
         [uploadId, topScore, topProblemId],
       );
       console.log(`[vision] auto-matched upload ${uploadId} → problem ${topProblemId} (score=${topScore.toFixed(3)})`);
+      if (userId) {
+        pushService.sendToUser(userId, 'Climb identified!', 'Tap to log your ascent.', { uploadId, type: 'vision_complete' }).catch(() => {});
+      }
     } else {
       // Confirm or new problem — mobile polls status and shows confirmation UI.
       // similarity_score < SIMILARITY_THRESHOLD_CONFIRM means no plausible match;
@@ -103,6 +108,9 @@ const worker = new Worker<VisionJobData>(
       );
       const label = topScore >= SIMILARITY_THRESHOLD_CONFIRM ? 'confirm-needed' : 'new-problem';
       console.log(`[vision] ${label} upload ${uploadId} (score=${topScore.toFixed(3)})`);
+      if (userId) {
+        pushService.sendToUser(userId, 'Review your climb', 'We found a possible match — tap to confirm.', { uploadId, type: 'vision_complete' }).catch(() => {});
+      }
     }
   },
   { connection: redisConnection },
@@ -111,14 +119,19 @@ const worker = new Worker<VisionJobData>(
 worker.on('failed', async (job, err) => {
   console.error(`[vision] job ${job?.id ?? '?'} failed:`, err.message);
   if (job?.data.uploadId) {
-    await pool
-      .query(
-        `UPDATE uploads SET processing_status = 'failed'::processing_status WHERE id = $1`,
+    const { rows } = await pool
+      .query<{ user_id: string }>(
+        `UPDATE uploads SET processing_status = 'failed'::processing_status WHERE id = $1 RETURNING user_id`,
         [job.data.uploadId],
       )
       .catch((dbErr: unknown) => {
         console.error('[vision] failed to mark upload as failed:', (dbErr as Error).message);
+        return { rows: [] as { user_id: string }[] };
       });
+    const userId = rows[0]?.user_id;
+    if (userId) {
+      pushService.sendToUser(userId, 'Upload failed', 'Photo processing failed. Please try again.', { uploadId: job.data.uploadId, type: 'vision_failed' }).catch(() => {});
+    }
   }
 });
 

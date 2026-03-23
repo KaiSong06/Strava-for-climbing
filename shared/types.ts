@@ -19,6 +19,7 @@ export interface UserProfile extends User {
 /** Returned by auth endpoints and GET /users/me (includes email) */
 export interface AuthUser extends UserProfile {
   email: string;
+  email_verified: boolean;
 }
 
 // ─── Gyms ─────────────────────────────────────────────────────────────────────

@@ -1,13 +1,24 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Notifications from 'expo-notifications';
+import * as Sentry from '@sentry/react-native';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAuthStore } from '@/src/stores/authStore';
+import { registerForPushNotifications, setupNotificationHandler } from '@/src/services/pushService';
+
+Sentry.init({
+  dsn: process.env['EXPO_PUBLIC_SENTRY_DSN'],
+  tracesSampleRate: 0.1,
+  enabled: !!process.env['EXPO_PUBLIC_SENTRY_DSN'],
+});
+
+setupNotificationHandler();
 
 const queryClient = new QueryClient();
 
@@ -24,7 +35,7 @@ export const unstable_settings = {
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
@@ -45,6 +56,8 @@ export default function RootLayout() {
 
   return <RootLayoutNav />;
 }
+
+export default Sentry.wrap(RootLayout);
 
 /** Watches auth state and redirects between (auth) and (tabs) stacks. */
 function AuthGate() {
@@ -69,6 +82,35 @@ function AuthGate() {
   return null;
 }
 
+function PushNotificationManager() {
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const hasHydrated = useAuthStore((s) => s._hasHydrated);
+  const router = useRouter();
+  const listenerRef = useRef<Notifications.EventSubscription | null>(null);
+
+  useEffect(() => {
+    if (!hasHydrated || !accessToken) return;
+    registerForPushNotifications().catch(console.error);
+  }, [hasHydrated, accessToken]);
+
+  useEffect(() => {
+    listenerRef.current = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as Record<string, unknown>;
+      if (data.type === 'vision_complete' || data.type === 'vision_failed') {
+        if (typeof data.uploadId === 'string') {
+          router.push(`/uploads/${data.uploadId}` as never);
+        }
+      }
+    });
+
+    return () => {
+      listenerRef.current?.remove();
+    };
+  }, [router]);
+
+  return null;
+}
+
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
@@ -76,6 +118,7 @@ function RootLayoutNav() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <AuthGate />
+        <PushNotificationManager />
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />

@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { pool } from '../db/pool';
 import { AppError } from '../middleware/errorHandler';
+import * as emailVerificationService from './emailVerificationService';
 
 const BCRYPT_ROUNDS = 12;
 const ACCESS_TOKEN_EXPIRY = '15m';
@@ -14,6 +15,7 @@ export interface AuthUser {
   avatar_url: string | null;
   home_gym_id: string | null;
   email: string;
+  email_verified: boolean;
   home_gym_name: string | null;
   follower_count: number;
   following_count: number;
@@ -68,19 +70,25 @@ export async function register(username: string, email: string, password: string
   const { rows } = await pool.query<AuthUser>(
     `INSERT INTO users (username, email, display_name, password_hash)
      VALUES ($1, $2, $3, $4)
-     RETURNING id, username, display_name, avatar_url, home_gym_id, email, created_at,
+     RETURNING id, username, display_name, avatar_url, home_gym_id, email, email_verified, created_at,
                NULL::text AS home_gym_name, 0 AS follower_count, 0 AS following_count`,
     [username, email, username, passwordHash],
   );
 
   const user = rows[0]!;
   const tokens = await issueTokenPair(user.id, user.username);
+
+  // Send verification email asynchronously — don't block registration on email delivery
+  emailVerificationService.sendVerification(user.id, email).catch((err: unknown) => {
+    console.error('[auth] failed to send verification email:', err);
+  });
+
   return { user, ...tokens };
 }
 
 export async function login(email: string, password: string): Promise<AuthResult> {
   const { rows } = await pool.query<AuthUser & { password_hash: string }>(
-    `SELECT u.id, u.username, u.display_name, u.avatar_url, u.home_gym_id, u.email, u.created_at,
+    `SELECT u.id, u.username, u.display_name, u.avatar_url, u.home_gym_id, u.email, u.email_verified, u.created_at,
             u.password_hash, g.name AS home_gym_name,
             (SELECT COUNT(*) FROM follows WHERE following_id = u.id)::int AS follower_count,
             (SELECT COUNT(*) FROM follows WHERE follower_id  = u.id)::int AS following_count

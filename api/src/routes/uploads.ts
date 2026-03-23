@@ -2,6 +2,8 @@ import { RequestHandler, Router } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
+import { requireVerified } from '../middleware/requireVerified';
+import { uploadLimiter } from '../middleware/rateLimiter';
 import { AppError } from '../middleware/errorHandler';
 import { pool } from '../db/pool';
 import { uploadBuffer } from '../services/storage';
@@ -55,7 +57,7 @@ const confirmBodySchema = z.object({
 
 // ─── POST /uploads ─────────────────────────────────────────────────────────────
 
-uploadsRouter.post('/', requireAuth, parsePhotos, async (req, res, next) => {
+uploadsRouter.post('/', requireAuth, requireVerified, uploadLimiter, parsePhotos, async (req, res, next) => {
   try {
     const files = Array.isArray(req.files) ? req.files : [];
     if (files.length < 2) {

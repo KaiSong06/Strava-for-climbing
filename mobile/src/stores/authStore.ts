@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import * as SecureStore from 'expo-secure-store';
 import type { AuthUser } from '../../../shared/types';
+import { unregisterPushNotifications } from '../services/pushService';
 
 // SecureStore adapter for Zustand persist middleware
 const secureStorage = createJSONStorage(() => ({
@@ -39,7 +40,10 @@ export const useAuthStore = create<AuthState>()(
 
       updateUser: (user) => set({ user }),
 
-      logout: () => set({ user: null, accessToken: null, refreshToken: null }),
+      logout: () => {
+        unregisterPushNotifications().catch(() => {});
+        set({ user: null, accessToken: null, refreshToken: null });
+      },
 
       setHasHydrated: (value) => set({ _hasHydrated: value }),
     }),
