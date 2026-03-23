@@ -8,6 +8,9 @@ import { feedRouter } from './feed';
 import { uploadsRouter } from './uploads';
 import { ascentsRouter } from './ascents';
 import { problemsRouter } from './problems';
+import { disputesRouter } from './disputes';
+import { searchRouter } from './search';
+import { internalRouter } from './internal';
 
 export const router = Router();
 
@@ -20,3 +23,6 @@ router.use('/feed', feedRouter);
 router.use('/uploads', uploadsRouter);
 router.use('/ascents', ascentsRouter);
 router.use('/problems', problemsRouter);
+router.use('/disputes', disputesRouter);
+router.use('/search', searchRouter);
+router.use('/internal', internalRouter);

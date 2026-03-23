@@ -3,6 +3,7 @@ import multer from 'multer';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
+import { pool } from '../db/pool';
 import { uploadBuffer } from '../services/storage';
 import * as uploadService from '../services/uploadService';
 import * as problemService from '../services/problemService';
@@ -154,8 +155,46 @@ uploadsRouter.post('/:uploadId/confirm', requireAuth, async (req, res, next) => 
     });
 
     await problemService.incrementTotalSends(problemId);
+    await problemService.calculateConsensusGrade(problemId);
 
     res.status(201).json({ ascentId, problemId });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /uploads/:uploadId/dispute ──────────────────────────────────────────
+
+uploadsRouter.post('/:uploadId/dispute', requireAuth, async (req, res, next) => {
+  try {
+    const { uploadId } = req.params;
+
+    const { rows: uploadRows } = await pool.query<{
+      id: string; problem_id: string | null;
+    }>(
+      `SELECT id, problem_id FROM uploads WHERE id = $1`,
+      [uploadId],
+    );
+    const upload = uploadRows[0];
+    if (!upload) throw new AppError('NOT_FOUND', 'Upload not found', 404);
+    if (!upload.problem_id) {
+      throw new AppError('INVALID_STATE', 'Upload has no matched problem to dispute', 409);
+    }
+
+    const { rows: existing } = await pool.query(
+      `SELECT id FROM match_disputes WHERE upload_id = $1 AND status = 'open'`,
+      [uploadId],
+    );
+    if (existing[0]) throw new AppError('CONFLICT', 'An open dispute already exists for this upload', 409);
+
+    const { rows } = await pool.query<{ id: string }>(
+      `INSERT INTO match_disputes (upload_id, reported_by, status)
+       VALUES ($1, $2, 'open')
+       RETURNING id`,
+      [uploadId, req.user!.userId],
+    );
+
+    res.status(201).json({ disputeId: rows[0]!.id });
   } catch (err) {
     next(err);
   }

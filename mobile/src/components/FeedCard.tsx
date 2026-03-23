@@ -24,17 +24,19 @@ function formatRelativeTime(isoString: string): string {
 interface FeedCardProps {
   item: FeedItem;
   onPress?: () => void;
+  onPressUser?: () => void;
+  onPressGym?: () => void;
 }
 
-export function FeedCard({ item, onPress }: FeedCardProps) {
+export function FeedCard({ item, onPress, onPressUser, onPressGym }: FeedCardProps) {
   const initial = item.user.display_name[0]?.toUpperCase() ?? '?';
   const gradeStr = item.problem.consensus_grade ?? item.user_grade ?? '';
   const typeLabel = TYPE_LABEL[item.type];
 
   return (
     <Pressable style={styles.card} onPress={onPress}>
-      {/* Avatar */}
-      <View style={styles.avatarCol}>
+      {/* Avatar — tappable to profile */}
+      <Pressable style={styles.avatarCol} onPress={onPressUser}>
         {item.user.avatar_url ? (
           <Image source={{ uri: item.user.avatar_url }} style={styles.avatar} />
         ) : (
@@ -42,14 +44,18 @@ export function FeedCard({ item, onPress }: FeedCardProps) {
             <Text style={styles.avatarInitial}>{initial}</Text>
           </View>
         )}
-      </View>
+      </Pressable>
 
       {/* Content */}
       <View style={styles.content}>
         <Text style={styles.action} numberOfLines={2}>
-          <Text style={styles.name}>{item.user.display_name}</Text>
+          <Text style={styles.name} onPress={onPressUser}>
+            {item.user.display_name}
+          </Text>
           {` ${typeLabel}${gradeStr ? ` a ${gradeStr}` : ' a problem'} at `}
-          <Text style={styles.gym}>{item.problem.gym.name}</Text>
+          <Text style={styles.gym} onPress={onPressGym}>
+            {item.problem.gym.name}
+          </Text>
         </Text>
 
         <Text style={styles.meta}>{formatRelativeTime(item.logged_at)}</Text>

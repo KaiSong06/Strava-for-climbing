@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "worker:vision": "ts-node-dev --respawn --transpile-only src/jobs/visionWorker.ts",
+    "worker:retirement": "ts-node-dev --respawn --transpile-only src/jobs/retirementJob.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "jest",
@@ -22,6 +23,7 @@
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.1.1",
+    "node-cron": "^4.2.1",
     "pg": "^8.11.5",
     "pgvector": "^0.2.0",
     "zod": "^3.23.8"
@@ -32,6 +34,7 @@
     "@types/jest": "^29.5.12",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.12.12",
+    "@types/node-cron": "^3.0.11",
     "@types/pg": "^8.11.6",
     "jest": "^29.7.0",
     "ts-jest": "^29.1.4",

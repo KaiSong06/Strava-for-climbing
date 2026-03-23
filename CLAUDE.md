@@ -43,7 +43,8 @@ cd mobile && npx expo start --android  # Android emulator
 
 # API
 cd api && npm run dev              # ts-node-dev, port 3001
-cd api && npm run worker:vision    # run stub vision worker (separate process)
+cd api && npm run worker:vision        # run vision BullMQ worker (separate process)
+cd api && npm run worker:retirement   # run nightly retirement cron (schedules at 02:00 UTC)
 cd api && npm test                 # Jest (all tests — no test files written yet)
 cd api && npx jest --testPathPattern=<pattern>   # run a single test file
 
@@ -142,4 +143,8 @@ Key shared types beyond the tables: `FeedItem` (ascent + problem + user + gym ag
 - `hold_vector` length varies per problem (2 floats per hold). pgvector requires fixed-dimension vectors — pad all vectors to 200 dims (100 holds max, `vector(200)`) with zeros before storing.
 - For matching, sort hold centroids by y-desc before vectorising so ordering is consistent across uploads of the same problem.
 - BullMQ job retries: 3 attempts, exponential backoff starting at 5s. Completed jobs kept for 100, failed for 500.
+- `calculateConsensusGrade` is called after every ascent is logged (via POST /uploads/:id/confirm and POST /ascents). It sorts all non-null user_grade values by V-number and takes the median.
+- Retirement runs nightly (02:00 UTC) via `npm run worker:retirement` or via POST /internal/run-retirement (protected by `INTERNAL_SECRET` header). Both call the same `runRetirement()` function.
+- Dispute creation: POST /uploads/:uploadId/dispute. Voting: POST /disputes/:disputeId/vote. Resolution requires ≥ 3 total votes with a majority. 'split' resolution creates a new problem and reassigns the upload.
+- Search: GET /search?q=&type=user|gym|all. Minimum 2 chars. Returns up to 5 users + 5 gyms, exact matches first.
 - The pgvector IVFFlat index (`idx_problems_hold_vector`, migration 004) uses `lists = 100`, tuned for up to ~10k active problems per gym. Pre-filtering by `gym_id + colour` (via `idx_problems_gym_colour`) is required before ANN queries to keep the index effective.

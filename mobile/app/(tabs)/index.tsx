@@ -88,6 +88,8 @@ export default function HomeScreen() {
               key={item.id}
               item={item}
               onPress={() => router.push({ pathname: '/problem/[id]', params: { id: item.problem.id } })}
+              onPressUser={() => router.push({ pathname: '/profile/[username]', params: { username: item.user.username } })}
+              onPressGym={() => router.push({ pathname: '/gym/[gymId]', params: { gymId: item.problem.gym.id } })}
             />
           ))
         )}
@@ -108,7 +110,12 @@ export default function HomeScreen() {
       data={feedItems}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
-        <FeedCard item={item} onPress={() => router.push({ pathname: '/problem/[id]', params: { id: item.problem.id } })} />
+        <FeedCard
+          item={item}
+          onPress={() => router.push({ pathname: '/problem/[id]', params: { id: item.problem.id } })}
+          onPressUser={() => router.push({ pathname: '/profile/[username]', params: { username: item.user.username } })}
+          onPressGym={() => router.push({ pathname: '/gym/[gymId]', params: { gymId: item.problem.gym.id } })}
+        />
       )}
       ListHeaderComponent={
         <View>
