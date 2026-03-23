@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { Pool } from 'pg';
 
-const pool = new Pool({ connectionString: process.env['DATABASE_URL'] });
+const pool = new Pool({ connectionString: process.env['DATABASE_URL'], ssl: { rejectUnauthorized: false } });
 
 async function migrate(): Promise<void> {
   const migrationsDir = path.resolve(__dirname, '../../db/migrations');

@@ -12,8 +12,8 @@ Social bouldering app for iOS and Android. Users log climbs, follow friends, and
 
 **Mobile**: React Native (Expo) — single codebase for iOS + Android
 **Backend API**: Node.js + Express + TypeScript
-**Database**: PostgreSQL with pgvector extension (similarity search)
-**Object storage**: S3-compatible (photos, 3D models)
+**Database**: Supabase PostgreSQL (hosted) with pgvector extension (similarity search)
+**Object storage**: Supabase Storage (photos, 3D models)
 **Vision pipeline**: Python + FastAPI (separate service, async) — pipeline stages implemented; depth estimation (Stage 6 / MiDaS) is TODO/skipped for MVP
 **Job queue**: BullMQ (Redis-backed) — vision pipeline runs async, never in-request
 **Auth**: JWT + refresh tokens
@@ -62,10 +62,12 @@ cd api && npm run db:seed      # seed gyms + test users
 ## Required environment variables
 
 **API** (`api/.env`):
-- `DATABASE_URL` — PostgreSQL connection string
+- `DATABASE_URL` — Supabase PostgreSQL connection string (use the pooler URL from Supabase dashboard, port 6543)
 - `REDIS_URL` — Redis connection string (e.g. `redis://localhost:6379`)
 - `JWT_SECRET` — secret for signing access tokens
-- `AWS_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_ENDPOINT` — S3-compatible object storage
+- `SUPABASE_URL` — Supabase project URL (e.g. `https://[project-ref].supabase.co`)
+- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (from dashboard → Settings → API)
+- `INTERNAL_SECRET` — shared secret used by vision worker when POSTing results back to the API
 - `PORT` — defaults to `3001`
 - `VISION_SERVICE_URL` — base URL of the Python vision service (e.g. `http://localhost:8000`); required by the BullMQ worker
 

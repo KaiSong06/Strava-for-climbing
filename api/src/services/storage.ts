@@ -1,69 +1,61 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import { AppError } from '../middleware/errorHandler';
 
-function getS3Bucket(): string {
-  const bucket = process.env['AWS_S3_BUCKET'];
-  if (!bucket) throw new AppError('S3_NOT_CONFIGURED', 'AWS_S3_BUCKET is required for file uploads', 500);
-  return bucket;
-}
-
-function createS3Client(): S3Client {
-  const region = process.env['AWS_REGION'];
-  const accessKeyId = process.env['AWS_ACCESS_KEY_ID'];
-  const secretAccessKey = process.env['AWS_SECRET_ACCESS_KEY'];
-
-  if (!region || !accessKeyId || !secretAccessKey) {
+function getSupabaseClient(): SupabaseClient {
+  const url = process.env['SUPABASE_URL'];
+  const key = process.env['SUPABASE_SERVICE_ROLE_KEY'];
+  if (!url || !key) {
     throw new AppError(
-      'S3_NOT_CONFIGURED',
-      'AWS_REGION, AWS_ACCESS_KEY_ID, and AWS_SECRET_ACCESS_KEY are required for file uploads',
+      'STORAGE_NOT_CONFIGURED',
+      'SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for file uploads',
       500,
     );
   }
+  return createClient(url, key);
+}
 
-  return new S3Client({ region, credentials: { accessKeyId, secretAccessKey } });
+// Module-level singleton — created once on first upload call
+let _client: SupabaseClient | null = null;
+function client(): SupabaseClient {
+  if (!_client) _client = getSupabaseClient();
+  return _client;
 }
 
 /**
- * Upload a base64-encoded image to S3 and return the public URL.
+ * Upload a base64-encoded image to Supabase Storage and return the public URL.
  * Accepts both raw base64 and data-URL format (data:image/png;base64,...).
+ * `folder` must match a Supabase bucket name ('avatars' or 'problems').
  */
 export async function uploadBase64Image(base64: string, folder: string): Promise<string> {
-  const bucket = getS3Bucket();
-
-  // Strip data-URL prefix if present
   const match = base64.match(/^data:(image\/\w+);base64,(.+)$/s);
   const contentType = match?.[1] ?? 'image/jpeg';
   const raw = match?.[2] ?? base64;
   const ext = contentType.split('/')[1] ?? 'jpg';
 
   const buffer = Buffer.from(raw, 'base64');
-  const key = `${folder}/${crypto.randomUUID()}.${ext}`;
+  const key = `${crypto.randomUUID()}.${ext}`;
 
-  const client = createS3Client();
-  await client.send(
-    new PutObjectCommand({ Bucket: bucket, Key: key, Body: buffer, ContentType: contentType }),
-  );
+  const { error } = await client().storage.from(folder).upload(key, buffer, { contentType });
+  if (error) throw new AppError('UPLOAD_FAILED', error.message, 500);
 
-  return `https://${bucket}.s3.amazonaws.com/${key}`;
+  return client().storage.from(folder).getPublicUrl(key).data.publicUrl;
 }
 
 /**
- * Upload a raw Buffer (e.g. from multer memoryStorage) to S3 and return the public URL.
+ * Upload a raw Buffer (e.g. from multer memoryStorage) to Supabase Storage and return the public URL.
+ * `folder` must match a Supabase bucket name ('avatars' or 'problems').
  */
 export async function uploadBuffer(
   buffer: Buffer,
   contentType: string,
   folder: string,
 ): Promise<string> {
-  const bucket = getS3Bucket();
   const ext = contentType.split('/')[1] ?? 'jpg';
-  const key = `${folder}/${crypto.randomUUID()}.${ext}`;
+  const key = `${crypto.randomUUID()}.${ext}`;
 
-  const client = createS3Client();
-  await client.send(
-    new PutObjectCommand({ Bucket: bucket, Key: key, Body: buffer, ContentType: contentType }),
-  );
+  const { error } = await client().storage.from(folder).upload(key, buffer, { contentType });
+  if (error) throw new AppError('UPLOAD_FAILED', error.message, 500);
 
-  return `https://${bucket}.s3.amazonaws.com/${key}`;
+  return client().storage.from(folder).getPublicUrl(key).data.publicUrl;
 }
