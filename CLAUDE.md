@@ -59,6 +59,15 @@ cd api && npm run build        # tsc → dist/ (production)
 
 # Docker Compose (full stack: redis, api, vision, vision-worker)
 docker compose up              # requires api/.env and vision/.env
+
+# E2E test environment (Postgres, Redis, MinIO, mock vision — no ML models needed)
+docker compose -f docker-compose.test.yml up --build
+# Test scenarios via helper scripts (no photos required):
+./test/enqueue-test-job.sh red    # auto-match (score ≥ 0.92)
+./test/enqueue-test-job.sh blue   # awaiting_confirmation (0.75–0.91)
+./test/enqueue-test-job.sh green  # new problem (< 0.75)
+# Test env ports: Postgres 5433, Redis 6380, MinIO 9000 (console 9001), mock vision 8001, API 3001
+# Test user: test@example.com / testpass123 (pre-verified), gym_id: 11111111-0000-0000-0000-000000000001
 ```
 
 ---
@@ -76,7 +85,12 @@ docker compose up              # requires api/.env and vision/.env
 - `VISION_SERVICE_URL` — base URL of the Python vision service (e.g. `http://localhost:8000`); required by the BullMQ worker
 - `CORS_ORIGIN` — comma-separated allowed origins (optional; if unset, CORS allows all origins)
 - `RESEND_API_KEY` — API key for Resend email service (used for verification and password reset emails)
+- `EMAIL_FROM` — sender address (e.g. `Crux <noreply@crux.app>`)
+- `FRONTEND_URL` — used to build reset/verify links in emails (e.g. `http://localhost:3001`)
 - `SENTRY_DSN` — Sentry DSN for error tracking (optional)
+- `DB_SSL` — set to `"false"` to disable SSL for local/test Postgres (production uses SSL by default)
+- `STORAGE_BACKEND` — set to `s3` to use S3/MinIO instead of Supabase Storage (used in test env)
+- `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_PUBLIC_URL`, `S3_REGION` — required when `STORAGE_BACKEND=s3`
 
 **Mobile** (`mobile/.env`):
 - `EXPO_PUBLIC_API_URL` — backend URL (e.g. `http://localhost:3001`); must have `EXPO_PUBLIC_` prefix to be exposed to the client
@@ -142,10 +156,18 @@ Key shared types beyond the tables: `FeedItem` (ascent + problem + user + gym ag
 - **API client**: `mobile/src/lib/api.ts` exports `api.get/post/patch/delete`. Always use this instead of raw `fetch`. It reads `EXPO_PUBLIC_API_URL`, auto-attaches the Bearer token, handles 401s by refreshing the token (deduplicating concurrent refresh attempts), and throws `ApiError` on non-2xx responses.
 - **Auth store**: `mobile/src/stores/authStore.ts` — Zustand store persisted to `SecureStore`. Check `_hasHydrated` before reading auth state (the root layout gates navigation on this).
 - **Follow store**: `mobile/src/stores/followStore.ts` — Zustand store for follow state.
-- **Components**: `mobile/src/components/` — `FeedCard` (renders a single feed item), `FollowButton` (follow/unfollow toggle), `ProblemCard` (problem summary card).
+- **Theme**: `mobile/src/theme/colors.ts` exports the "Midnight Editorial" design token object (`colors`). Always import color values from here — never hardcode hex strings in component stylesheets.
+- **Components**: `mobile/src/components/` — `FeedCard` (renders a single feed item), `FollowButton` (follow/unfollow toggle), `ProblemCard` (problem summary card), `TabBar` (custom bottom bar with FAB for the record tab; also exports `TAB_BAR_HEIGHT = 72` used by `_layout.tsx` for `sceneStyle.paddingBottom`).
+- **Screen organisation**: Simple screens are a single file at `mobile/src/screens/<Name>Screen.tsx`. Complex screens use a folder: `mobile/src/screens/<Name>/` containing `<Name>Screen.tsx` and a `components/` subfolder for sub-components. Tab route files (e.g. `mobile/app/(tabs)/account.tsx`) are thin re-exports: `export { default } from '@/src/screens/Account/AccountScreen'`.
+- **Hooks**: `mobile/src/hooks/useVisionPipeline.ts` and `useMatchResult.ts` — **stubs only**; simulate delays but do not call the real API yet (TODO: wire to upload endpoint and match result polling).
 - **Tab screens**: `(tabs)/index.tsx` = feed, `record.tsx` = upload/log a climb, `search.tsx` = search, `gym.tsx` = gym browse, `account.tsx` = user profile. Auth screens: `(auth)/login.tsx`, `(auth)/register.tsx`.
 - **Upload service**: `mobile/src/services/uploadService.ts` — handles photo selection and multipart upload to the API.
 - **Shared types**: Import from `shared/types.ts` (not a published package; reference by relative path or configure the path in tsconfig).
+- **Account screen**: Recent activity is currently mocked (`MOCK_ACTIVITIES` in `AccountScreen.tsx`). TODO: replace with a real query to the ascents endpoint once it's wired.
+
+## UI References
+
+`UI_References/` contains HTML mockups and design notes for key screens (currently `Crux_Account/` and `Crux_Home/`). These are design specs only — not production code. Reference them when implementing or restyling a screen.
 
 ---
 
@@ -165,3 +187,7 @@ Key shared types beyond the tables: `FeedItem` (ascent + problem + user + gym ag
 - The `followsRouter` is mounted at `/users` (not `/follows`) — follow/unfollow endpoints live under `/users/:id/follow` etc. See `api/src/routes/index.ts`.
 - Docker Compose runs 4 services: `redis`, `api`, `vision`, and `vision-worker` (a separate container from the same API image that only runs the BullMQ worker). The vision-worker depends on both redis and vision.
 - JWT access tokens expire in 15 minutes; refresh tokens expire in 30 days and are stored as bcrypt hashes in the `refresh_tokens` table. bcrypt uses 12 salt rounds.
+- Storage backend is toggled by `STORAGE_BACKEND=s3` env var. Default is Supabase Storage. When `s3`, the service uses `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_PUBLIC_URL`. The test environment always uses S3 (MinIO). Both backends expose `uploadBase64Image` and `uploadBuffer` from `api/src/services/storage.ts` — never call storage backends directly.
+- Email verification tokens (migration 007) and password reset tokens (migration 005) are stored as SHA256 hashes, never raw. Both are one-time use (`used_at`), with 24-hour and 1-hour expiry respectively. Password reset atomically invalidates all refresh tokens for the user.
+- The data model has three new tables not listed above: `password_reset_tokens`, `email_verification_tokens` (both with `token_hash`, `expires_at`, `used_at`), and `push_tokens` (Expo push token per user, unique constraint).
+- The vision service is deployed to Fly.io (`vision/fly.toml`) in the `yyz` region, 2 CPUs / 4 GB RAM, min 0 machines (scales to zero). The API is hosted separately.

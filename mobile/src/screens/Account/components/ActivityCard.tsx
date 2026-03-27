@@ -1,0 +1,149 @@
+import { useRef } from 'react';
+import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors } from '@/src/theme/colors';
+
+export interface AscentActivity {
+  id: string;
+  problemName: string;
+  grade: string;
+  imageUrl: string | null;
+  tags: string[];
+  ascentType: 'flash' | 'send' | 'attempt';
+  createdAt: string;
+}
+
+interface Props {
+  activity: AscentActivity;
+  onPress?: () => void;
+}
+
+export function ActivityCard({ activity, onPress }: Props) {
+  const imageScale = useRef(new Animated.Value(1)).current;
+
+  function handlePressIn() {
+    Animated.spring(imageScale, {
+      toValue: 1.05,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 0,
+    }).start();
+  }
+
+  function handlePressOut() {
+    Animated.spring(imageScale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 0,
+    }).start();
+  }
+
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+    >
+      <View style={styles.imageContainer}>
+        {activity.imageUrl ? (
+          <Animated.Image
+            source={{ uri: activity.imageUrl }}
+            style={[styles.image, { transform: [{ scale: imageScale }] }]}
+          />
+        ) : (
+          <Animated.View
+            style={[styles.imagePlaceholder, { transform: [{ scale: imageScale }] }]}
+          />
+        )}
+        <View style={styles.gradeBadge}>
+          <Text style={styles.gradeBadgeText}>{activity.grade}</Text>
+        </View>
+      </View>
+
+      <View style={styles.content}>
+        <Text style={styles.problemName}>{activity.problemName}</Text>
+        <View style={styles.tagsRow}>
+          {activity.tags.map((tag) => (
+            <View key={tag} style={styles.tag}>
+              <Text style={styles.tagText}>{tag.toUpperCase()}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.surfaceContainer,
+    borderRadius: 16,
+    overflow: 'hidden',
+    // Ghost border: outline at ~5% opacity (sits on identical bg — per design system rule)
+    borderWidth: 1,
+    borderColor: 'rgba(140, 145, 157, 0.05)',
+  },
+  cardPressed: {
+    backgroundColor: colors.surfaceContainerHigh,
+  },
+  imageContainer: {
+    aspectRatio: 16 / 9,
+    overflow: 'hidden',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  imagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: colors.surfaceContainerHighest,
+  },
+  gradeBadge: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.45,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  gradeBadgeText: {
+    color: colors.onPrimary,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  content: {
+    padding: 24,
+  },
+  problemName: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: colors.onSurface,
+    marginBottom: 8,
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  tag: {
+    backgroundColor: 'rgba(168, 200, 255, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  tagText: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.0,
+  },
+});

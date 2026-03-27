@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary-fixed": "#d6e3ff",
+              "outline": "#8c919d",
+              "surface-container": "#201f1f",
+              "on-surface-variant": "#c2c6d4",
+              "inverse-surface": "#e5e2e1",
+              "surface": "#131313",
+              "primary": "#a8c8ff",
+              "surface-container-high": "#2a2a2a",
+              "primary-container": "#005fb8",
+              "background": "#131313",
+              "secondary-container": "#344a6c",
+              "on-surface": "#e5e2e1",
+              "on-secondary": "#1a3152",
+              "on-primary-container": "#cadcff",
+              "on-error": "#690005",
+              "on-error-container": "#ffdad6",
+              "error": "#ffb4ab",
+              "secondary": "#b2c7f0",
+              "on-secondary-fixed": "#011b3c",
+              "on-secondary-fixed-variant": "#324769",
+              "surface-bright": "#393939",
+              "surface-container-lowest": "#0e0e0e",
+              "surface-tint": "#a8c8ff",
+              "primary-fixed-dim": "#a8c8ff",
+              "inverse-on-surface": "#313030",
+              "tertiary-fixed": "#ffdbcb",
+              "tertiary-fixed-dim": "#ffb691",
+              "surface-dim": "#131313",
+              "outline-variant": "#424752",
+              "inverse-primary": "#005db5",
+              "error-container": "#93000a",
+              "secondary-fixed": "#d6e3ff",
+              "on-tertiary": "#552100",
+              "tertiary": "#ffb691",
+              "on-tertiary-fixed": "#341100",
+              "tertiary-container": "#a04401",
+              "surface-container-highest": "#353534",
+              "surface-variant": "#353534",
+              "secondary-fixed-dim": "#b2c7f0",
+              "on-tertiary-container": "#ffd1bc",
+              "on-secondary-container": "#a4b9e1",
+              "on-tertiary-fixed-variant": "#783100",
+              "on-primary": "#003062",
+              "on-primary-fixed": "#001b3d",
+              "on-background": "#e5e2e1",
+              "surface-container-low": "#1c1b1b",
+              "on-primary-fixed-variant": "#00468b"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface font-body antialiased selection:bg-primary/30">
+<!-- TopAppBar -->
+<header class="flex items-center px-6 py-4 w-full sticky top-0 z-50 bg-[#131313] dark:bg-[#131313] transition-all duration-300">
+<div class="flex items-center gap-4 w-full max-w-7xl mx-auto">
+<div class="flex-grow relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-xl" data-icon="search">search</span>
+<input class="w-full bg-surface-container-highest border-none rounded-xl py-3 pl-12 pr-4 text-on-surface placeholder:text-on-surface-variant focus:ring-1 focus:ring-primary/50 transition-all font-['Inter'] text-[0.875rem]" placeholder="Explore climbs, gyms, athletes..." type="text"/>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container-low hover:bg-[#1c1b1b] transition-colors group">
+<span class="material-symbols-outlined text-primary group-active:scale-95 duration-200" data-icon="tune">tune</span>
+</button>
+</div>
+</header>
+<main class="pb-24 max-w-7xl mx-auto px-4 sm:px-6">
+<!-- Trending Stories / Athletes -->
+<section class="mb-8">
+<div class="flex items-center justify-between mb-4 px-2">
+<h2 class="text-[1.25rem] font-bold tracking-tight text-on-surface">Friends</h2>
+<span class="text-primary text-sm font-medium cursor-pointer">View all</span>
+</div>
+<div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth">
+<!-- Athlete Circle -->
+<div class="flex flex-col items-center gap-2 flex-shrink-0 group">
+<div class="w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-primary to-primary-container">
+<div class="w-full h-full rounded-full border-2 border-surface overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Close-up portrait of a professional female climber with chalk on her face, cinematic lighting, dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHuh20pon5hd6UVLN56dW3gsRX6YgSlDICzYk3kJWtAdVknh_zYj0GlFXrxRRSgV_OcAljLBY7VsHk8XjgdOHKQbedX9YNL2eROR1hcrFAFN7-e-6XrSS4s7e0p8bayRnS3Q7Hdpz0oO-xCGqVbB6dKrLf7Qc-7wNJPTuOP6LYciLl1TgtVrh33s1wLY5cqx-BLY5n1DPE77ykPG_w4RPvBhYhdWgeUrVEoCvXr7W7GvoRd2rIDsLixVyt4Y0rU5WNgbxkkEyhLNhV"/>
+</div>
+</div>
+<span class="text-[0.7rem] font-medium text-on-surface-variant">@ash_v12</span>
+</div>
+<!-- Repeat Athlete Circles -->
+<div class="flex flex-col items-center gap-2 flex-shrink-0">
+<div class="w-16 h-16 rounded-full p-[2px] bg-surface-container-high">
+<div class="w-full h-full rounded-full border-2 border-surface overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Athlete resting on a bouldering mat, muscular definition, dramatic top lighting, gritty texture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKOFp2MJKfHB_KOPpHnYIIICGfTIJQGdlx5iqUwInSIcH8r2v71aE-mpesCkvnrLx80ShcM7079HfdhnvyM-MLJ9_jQbe3algg4YDEfEAQEIDB4FLd9KlVT2PhJ6pd9fcmEVjrZwtqSYMMsfLoOCKOwQBUpT_GuUit6dAh20m-C3YcJMDFIXJkJLRXbuhv54iBMSuJqE2nXRHyCFg4pgj-9rc1H_uW53Bj7DXIKoO8l52H8gMxWRp81NTS94GyihhcGLU_L9DeIdSU"/>
+</div>
+</div>
+<span class="text-[0.7rem] font-medium text-on-surface-variant">@leo_beta</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-shrink-0">
+<div class="w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-primary to-primary-container">
+<div class="w-full h-full rounded-full border-2 border-surface overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Young male athlete chalking hands, dynamic perspective, dark moody gym setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSora3WN1gdoR1Tkj8Cja8M1e1jUThkJ5ao0X5Y4ZehlNbacD7caZY8W_WoJdLYbCt4aO25nbbmJ1EuzUKbk7djcxKtmVJs7i8J1w_3fedzStXqMXdgJ3iCtnZUIxNRkE_f32EXdx2jC9ELlIUdXqhYHnVoplVuAbrd9lkQPN7s92Z1lPkT9I03fDGz9YsZyTiuW33ekwQ7lo2egS4EFCsNv6ux536HUK6ndixL9GtAaSWCxGpXNa2c7pMfpfkgRZk2kg0WgzFIcwz"/>
+</div>
+</div>
+<span class="text-[0.7rem] font-medium text-on-surface-variant">@dyno_king</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-shrink-0">
+<div class="w-16 h-16 rounded-full p-[2px] bg-surface-container-high">
+<div class="w-full h-full rounded-full border-2 border-surface overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Professional female athlete in mid-climb action, focus on hand grip, high contrast photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCH_mAyuuGIb6diK2oRr9ICk6_viy1O3i_-1cI4u0KHTYcGLbHbtO2MxfgnP_BYnqbsyqgyvpTFN09uu_xxRIq2HWYSvLC_MAsUf0ZMyDnSnWRx-W60GnEmTuie5Qv5j3Ace-MBds90KNDFhQ4JZeHxbKdooVig0uD9p3IMpl-Y92wXPJTwQe5doRBYZoU7AvSA7-_j-j3hhkWN_Ydpwqhm4k5E2hCl9y0V1QS_MMGgumuiOnf2QPerU2BlKi2_5_irdQ7F6ytK2_py"/>
+</div>
+</div>
+<span class="text-[0.7rem] font-medium text-on-surface-variant">@boulder_bee</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-shrink-0">
+<div class="w-16 h-16 rounded-full p-[2px] bg-surface-container-high">
+<div class="w-full h-full rounded-full border-2 border-surface overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Extreme athlete hanging from a overhang, outdoor rock climbing, sharp focus on silhouette" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbUgk-K4wsh10b2LgQtaxUuOKP5iYOnaZPaWPb3iOHTnfC-axQGoeL5HLvMp93pBqGyPkS0g4wmE43Wn7h3pXQ8TxJVSYuXogSrhEDeZGtiRfv-cGh5WcN7uDhi9kbQpjYiMhpm9Cvj6nG9syAMw_YkvyepQilKniX-8HpLFsz6eAosCO1d1NkTVJCvegYSfW_9odpVcphriOdQztHTIa6Fr1lGnR1FU-dGHmQjifLrcOtMcLggXYnkCAFM08hXnWhODX2Jr_n-fAx"/>
+</div>
+</div>
+<span class="text-[0.7rem] font-medium text-on-surface-variant">@peak_form</span>
+</div>
+</div>
+</section>
+<!-- Discovery Grid (Bento/Instagram Mix) -->
+<div class="grid grid-cols-3 gap-2 sm:gap-4 md:grid-cols-4 lg:grid-cols-6 auto-rows-[120px] sm:auto-rows-[160px]">
+<!-- Large Featured Climb -->
+<div class="col-span-2 row-span-2 relative group overflow-hidden rounded-xl bg-surface-container">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" data-alt="Pro climber tackling a high-grade V10 problem on a dark rock face, cinematic mood with cool blue highlights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5lQeOsjhG8MnU_NJT7_OnrtHAqavCxASURXa3g-8qC6cMfsCh-vSMQeKHdGmDgPAtVtYorTonsRrKt8nifSgAwBWk9FB2SGEXFTLvbeWZIhMx4iE_ui7AcaadFaUuxuxk5IXOZUkWbD-k0Ov8CMyECTfthhgVV0hkTE9YoRXg-Q6BjjqWLfRMiK5NxaU6Rt6fXAgYEp_UP1EX5ivWLgHFQ8COiCxQd1JHBRUlst-_U2j-uppRJfGlN_OiS_9rdne0YSLANDQARfJ-"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-4 left-4 flex flex-col">
+<span class="bg-primary text-on-primary text-[0.6rem] font-bold px-2 py-0.5 rounded-full w-fit mb-1">V7 CRUX</span>
+<h3 class="text-sm font-bold text-white tracking-tight">Obsidian Overhang</h3>
+</div>
+<div class="absolute top-4 right-4">
+<span class="material-symbols-outlined text-white/50" data-icon="play_circle">play_circle</span>
+</div>
+</div>
+<!-- Gym Highlight Tile -->
+<div class="col-span-1 row-span-1 relative group overflow-hidden rounded-xl bg-surface-container-low border border-outline-variant/10">
+<div class="absolute inset-0 bg-primary/5 flex flex-col items-center justify-center p-4 text-center">
+<span class="material-symbols-outlined text-primary mb-2" data-icon="fitness_center">fitness_center</span>
+<p class="text-[0.65rem] font-bold uppercase tracking-widest text-on-surface-variant">GYM SPOTLIGHT</p>
+<p class="text-xs font-medium text-on-surface mt-1 leading-tight">The Vertical Lab</p>
+</div>
+</div>
+<!-- Square Discovery 1 -->
+<div class="col-span-1 row-span-1 group overflow-hidden rounded-xl bg-surface-container">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Climbing shoes on a textured gym floor, soft focus background with climbers, blue tonal edit" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIhYZAes4ixx3XdezEc7H1VhOjc5K2_aQsrtGezu3Vp4s3xNkpJL1rChsdhU9UxDmEWzjjvL6QFT7X4tanL4QANp7DbDbdH90vE9gKk11eBEgeG-yVXVT4QB9os-7EBkAcaEF04HJXr5gkyyYj7_vmNHB10GwZy3MpsbqZGfhXNEP78R0R6J7N5Hv-hOzglX8HVGvO62zMR7oQ7MzDl2FHzIIJ_Z8Ip9cClfdPz3zE1gjGF-ArPSFNv4FC5qVCLpP9AooBwWQqEHTE"/>
+</div>
+<!-- Square Discovery 2 -->
+<div class="col-span-1 row-span-1 group overflow-hidden rounded-xl bg-surface-container">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Portrait of a young climber smiling after a successful route, chalky hands, bright blue eyes, dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-ccJlb19AHhMvKXINpeQwO9BHcABNEqZPJmL_ayy1_RIPSGgUWNLE3WXlbr4Q1SO1olCi6hPqydSVCeaFJKdxAG_C-0_tdDgIQBnQCwR0qNyk82iIud4XoJYwn-bCwf8tkN-YD0L1FIIW0RhuPPm-I8jKdFdGQB3_CC_9c2EwFrYeQA0OGAqQDYKstFLKWr_6EhZkK2SLy6j3miHnTAqCTb01CRYZ5TDnmMdf0w3_UqAyKLFw2OX6vpnGzgISoabotpAOj-7Y5GIZ"/>
+</div>
+<!-- Square Discovery 3 -->
+<div class="col-span-1 row-span-1 group overflow-hidden rounded-xl bg-surface-container">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Dramatic silhouette of a climber on a jagged ridge line at dusk, dark blue sky" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzmkGI-JPbtiUOI30cVdOBwe07rz7HNcS3iV5Tsmkd-Hv4_qO2_ZUluPJhaCBswN1oyJ5epVceFZfJOSK59eM5TxSL-whfquCaEL9xe8ErQy4FHFmXm6ZfWQTxEnz83rvk8pj4uwd3IOXLiNvM3CfjedrOVOiw3utyrVLx2LWZhLYgs4UfuNvlsGe2r4SYkcAAyXU9GsWGhkLpydl4SNCdowhM7CyxtMjSM9KgXh6xBHMcODpCYCMOsapnfZsWHiBgBhURFSVn0d80"/>
+</div>
+<!-- Tall Discovery (Video Style) -->
+<div class="col-span-1 row-span-2 relative group overflow-hidden rounded-xl bg-surface-container">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" data-alt="Action shot of a climber lunging for a hold, motion blur, dramatic gym lighting, high contrast" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD9TY0ufEUSD6OuObmAInEdo9lNXGu_Rog4rN0amFwNQp4JaUoQrfW2LuGWS-jK1enYTbTdzwLIoFomQwC5-fnpdeJ_Q066Z1_qRaperWX7ZT-17Sl6kAxMA1p80IhLNgfu_2_Nirr8v-ItQPYAcpsOigVuKW_OKLC43tQXQT6HJIkqXWDR0iRkZTsvdKmMZ9xxWY42R8SsRGIl5X0DM9OIPhnxSCkQQHgXM_X5HttVbi8SH0LlAk0NLdgz7ASvxiLM-zf6c2-FCoQa"/>
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
+<div class="absolute bottom-4 left-0 w-full flex justify-center">
+<span class="material-symbols-outlined text-white" data-icon="play_arrow" data-weight="fill" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</div>
+</div>
+<!-- Square Discovery 4 -->
+<div class="col-span-1 row-span-1 group overflow-hidden rounded-xl bg-surface-container">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Detail of a climbing harness and gear, metallic hardware, industrial aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD39Hn6vC-g8eGr8UIt7lS6BGYWcqtcOeFQGuzKo9PD4XO1iXLS4kTJMucwwXoE0HWpdBkdF14DS8t0VXoJNelPZgUV-kVZcltdu_B33gg_jRtIREA8ZjesIAyk247kwIF9Lk06_HnOEqdR9URylXSFTuvP6zpoVRNjKGKQDgj1MZdGRb6h6o3OAXWecf7wN6fE_NxOEcvuZTaqNp5HUR9nM_GmwjeKp8hAZyBDWgFftXpr7-meAv4h9QjEOl4x9qV3uCZJN0WGzVC5"/>
+</div>
+<!-- Featured Athlete Bio -->
+<div class="col-span-2 row-span-1 bg-surface-container-low rounded-xl flex items-center p-4 gap-4 border border-outline-variant/10">
+<img class="w-12 h-12 rounded-full object-cover ring-2 ring-primary/20" data-alt="Thumbnail profile of a climber" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9WuXzH_vK66knYCc3vJO1mgCUnp5KTlrz6vbamMZnE5RZELxo-uf7YOTZ22KGIBkWCvG62SWWyG8CetkPt0MItYdhbinwy3nd_ON0tSVv-bSsMpQvJeUx6w_uwIkhJN4MYtqcrMd-uXG8u0GDFZ5K4j3h-RRixnY3HV4YX9-sVBEeiGGFs77ibGyScFe5HQdnOoaNofeWh8OJEhf_S-UOU10-r32JfcasruR5f0WLhoa1bdOLT-9LUWjKkvVbvpRTTvL7_1nLGcRk"/>
+<div class="flex-grow">
+<p class="text-xs font-bold text-on-surface">@ash_v12</p>
+<p class="text-[0.65rem] text-on-surface-variant">Sent "The Void" (V9) today!</p>
+</div>
+<button class="bg-primary text-on-primary text-[0.65rem] font-bold px-3 py-1.5 rounded-lg">Follow</button>
+</div>
+<!-- Square Discovery 5 -->
+<div class="col-span-1 row-span-1 group overflow-hidden rounded-xl bg-surface-container">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Texture of a pink climbing hold on a dark wall, extreme close up, sharp contrast" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhp8NBBwWU-iKJLbGiKaUMwQIcnMCMANKvowfVOF0JrpKBXSP2y9Vr-TBQ_0-qUoixKXix_tS6_cKybPiLh937Iz-APjzeBGbIFW-5fTYe9qJBlESWruo-mRK3YcGj4hsgRow_aLkyIE96mrdmg13hmfMbafT5n6mNRCgxeRzYxPnhoLxUf3BguqPZhdtRCAONhCKoOYom4DGVn8wqzYn1YpcebQtVtqvUKTA8B9FnBQo3xad4yCMCqzUymemS9yKWGCuD2QINgOA5"/>
+</div>
+<!-- Grid Extension -->
+<div class="col-span-1 row-span-1 group overflow-hidden rounded-xl bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Outdoor bouldering group cheering, candid moment, moody forest lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD6xpdRWQkx1IgUvaQ3HI26S8SOzExIpo-fiRzLQF8dCXbPhAdI41-vh258ovK4F_55ho_S6fm3DIZuz0MInQP11rxoJnMqJwUe_epH2HO35_mhQoCmmLSbLSCv8esx5DgG1TWlkT0RdO1x7VJW5k7Fxho8WxPY-yb-EN2JkcK23pszydzTE8RP3-iF79NAKPLAXl_0MaWqg1nk52IJxuvwRPg6RzLQOR7P6eVI5qhDMLPQadpS-orVw5rFC6Qs3ESvf3WwxsPXMFZG"/>
+</div>
+<div class="col-span-1 row-span-1 group overflow-hidden rounded-xl bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Empty modern climbing gym interior with architectural lines, night lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIx5d3ZHqlT0cMMdlgRragKQAylgys7UvNUjjqHGTSE7E258K4lw_0IiglPMoCjx9qJsIxU8GdWc4K1_bp31a8dyta8xkNK7dU3pKMYkYhdGuD89VG9-8AOTzg4JGaVAGezWZZMM8fhwvQpBXMyYWQZAA_oRO-RjeQyxFee4U-V-hLt_CJBOYc5WJQLbr84DrYMVAe_OrDJuM_ItPL8DOWKt4LBeNXs3Br54aATxWHhHDtwdhLldKAMXJv7H5XVgKiD8ieZRvk_zdV"/>
+</div>
+<div class="col-span-1 row-span-1 group overflow-hidden rounded-xl bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Close up of a climber's hands gripping a crimp hold, sweat and tension, dramatic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAf2wtz4_ve8LJA0ouW5hl75jF7b2MwmC4VMqw1G611F-6RGDb8QI-1l5lNoVmElfpsBrYzcJ35f459qUlrl6u-qt9aKhQ7xSc8vxzXaMYOouIF2HGG0Gkmam0jYvu-Ueyv48PBegn0W0sneZJDgnclzgY3HOtMfNQX0BgJjyrNJVAyTPa0IdVmiTcHimIju-RmDpwFg-sF4FFL4Sd7L9ON-hqakWM4rVq2PtvDm3F5VOha56XatoTgESzwsP8thE25-SuPXbXwLrom"/>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-2 bg-[#1c1b1b]/80 backdrop-blur-xl border-t border-[#424752]/15 shadow-[0px_-4px_16px_rgba(0,0,0,0.4)] z-50">
+<a class="flex flex-col items-center justify-center text-[#c2c6d4] px-3 py-1 hover:text-[#e5e2e1] transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="font-['Inter'] text-[0.75rem] font-medium tracking-normal">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#a8c8ff]/10 text-[#a8c8ff] rounded-xl px-3 py-1 active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="search" data-weight="fill" style="font-variation-settings: 'FILL' 1;">search</span>
+<span class="font-['Inter'] text-[0.75rem] font-bold tracking-normal">Search</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c2c6d4] px-3 py-1 hover:text-[#e5e2e1] transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1 text-2xl" data-icon="add_circle">add_circle</span>
+<span class="font-['Inter'] text-[0.75rem] font-medium tracking-normal">Record</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c2c6d4] px-3 py-1 hover:text-[#e5e2e1] transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="fitness_center">fitness_center</span>
+<span class="font-['Inter'] text-[0.75rem] font-medium tracking-normal">Gyms</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#c2c6d4] px-3 py-1 hover:text-[#e5e2e1] transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="font-['Inter'] text-[0.75rem] font-medium tracking-normal">Account</span>
+</a>
+</nav>
+</body></html>

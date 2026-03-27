@@ -2,6 +2,11 @@ import { useEffect, useRef } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
+import {
+  Inter_400Regular,
+  Inter_700Bold,
+  Inter_900Black,
+} from '@expo-google-fonts/inter';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
@@ -38,6 +43,9 @@ SplashScreen.preventAutoHideAsync();
 function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    Inter_400Regular,
+    Inter_700Bold,
+    Inter_900Black,
   });
 
   useEffect(() => {

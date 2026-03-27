@@ -57,7 +57,13 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 
         return (
           <Pressable key={route.key} style={styles.tabItem} onPress={onPress}>
-            <MaterialCommunityIcons name={iconName} size={24} color={color} />
+            {isFocused ? (
+              <View style={styles.activePill}>
+                <MaterialCommunityIcons name={iconName} size={24} color={color} />
+              </View>
+            ) : (
+              <MaterialCommunityIcons name={iconName} size={24} color={color} />
+            )}
           </Pressable>
         );
       })}
@@ -88,6 +94,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 8,
+  },
+  activePill: {
+    backgroundColor: 'rgba(168, 200, 255, 0.1)',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   fabItem: {
     marginTop: -12,
