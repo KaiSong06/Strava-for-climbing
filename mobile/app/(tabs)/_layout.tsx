@@ -1,85 +1,25 @@
 import React from 'react';
-import { SymbolView } from 'expo-symbols';
 import { Tabs } from 'expo-router';
-
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TabBar, TAB_BAR_HEIGHT } from '@/src/components/TabBar';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
+      tabBar={(props) => <TabBar {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-        headerShown: useClientOnlyValue(false, true),
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{ ios: 'house.fill', android: 'home', web: 'home' }}
-              tintColor={color}
-              size={28}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="search"
-        options={{
-          title: 'Search',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
-              tintColor={color}
-              size={28}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="record"
-        options={{
-          title: 'Record',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{ ios: 'plus.circle.fill', android: 'add_circle', web: 'add_circle' }}
-              tintColor={color}
-              size={28}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="gym"
-        options={{
-          title: 'Gym',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{ ios: 'building.2', android: 'location_city', web: 'location_city' }}
-              tintColor={color}
-              size={28}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="account"
-        options={{
-          title: 'Account',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{ ios: 'person.fill', android: 'account_circle', web: 'account_circle' }}
-              tintColor={color}
-              size={28}
-            />
-          ),
-        }}
-      />
+        headerShown: true,
+        sceneStyle: { paddingBottom: TAB_BAR_HEIGHT + insets.bottom },
+      }}
+    >
+      <Tabs.Screen name="index"  options={{ title: 'Home' }} />
+      <Tabs.Screen name="search" options={{ title: 'Search' }} />
+      <Tabs.Screen name="record" options={{ title: 'Record', headerShown: false }} />
+      <Tabs.Screen name="gym"    options={{ title: 'Gym' }} />
+      <Tabs.Screen name="account" options={{ title: 'Account' }} />
+      <Tabs.Screen name="two"    options={{ href: null }} />
     </Tabs>
   );
 }

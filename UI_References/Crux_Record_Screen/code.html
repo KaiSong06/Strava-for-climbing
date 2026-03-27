@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>KINETIC - Record Workout</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-tertiary-fixed": "#341100",
+              "on-secondary": "#1a3152",
+              "outline-variant": "#424752",
+              "on-secondary-fixed": "#011b3c",
+              "on-tertiary-fixed-variant": "#783100",
+              "secondary-fixed": "#d6e3ff",
+              "on-secondary-container": "#a4b9e1",
+              "on-primary-fixed-variant": "#00468b",
+              "on-error": "#690005",
+              "on-tertiary-container": "#ffd1bc",
+              "primary-fixed-dim": "#a8c8ff",
+              "background": "#131313",
+              "on-primary-container": "#cadcff",
+              "surface-container-lowest": "#0e0e0e",
+              "surface-bright": "#393939",
+              "surface-container-low": "#1c1b1b",
+              "on-surface": "#e5e2e1",
+              "secondary": "#b2c7f0",
+              "surface-tint": "#a8c8ff",
+              "on-surface-variant": "#c2c6d4",
+              "tertiary-fixed-dim": "#ffb691",
+              "on-error-container": "#ffdad6",
+              "inverse-surface": "#e5e2e1",
+              "surface-dim": "#131313",
+              "on-secondary-fixed-variant": "#324769",
+              "surface": "#131313",
+              "surface-variant": "#353534",
+              "error-container": "#93000a",
+              "on-background": "#e5e2e1",
+              "surface-container-high": "#2a2a2a",
+              "inverse-primary": "#005db5",
+              "surface-container": "#201f1f",
+              "primary-fixed": "#d6e3ff",
+              "secondary-fixed-dim": "#b2c7f0",
+              "tertiary-fixed": "#ffdbcb",
+              "tertiary": "#ffb691",
+              "primary-container": "#005fb8",
+              "tertiary-container": "#a04401",
+              "outline": "#8c919d",
+              "on-tertiary": "#552100",
+              "on-primary": "#003062",
+              "primary": "#a8c8ff",
+              "surface-container-highest": "#353534",
+              "error": "#ffb4ab",
+              "inverse-on-surface": "#313030",
+              "secondary-container": "#344a6c",
+              "on-primary-fixed": "#001b3d"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+        body {
+          min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body min-h-screen pb-32">
+<!-- Top Navigation -->
+<main class="px-6 max-w-2xl mx-auto pt-8"><!-- Project Selector Section -->
+<section class="mb-8 space-y-2">
+<label class="text-sm font-bold uppercase tracking-wider text-on-surface-variant px-1">Project</label>
+<div class="relative">
+<select class="w-full bg-surface-container border border-outline-variant/20 text-on-surface rounded-xl p-4 appearance-none focus:outline-none focus:border-primary/50 transition-colors cursor-pointer">
+<option disabled="" selected="" value="">Select Project</option>
+<option class="font-bold" value="new">+ Create New Project</option>
+<option value="p1">Main Project</option>
+<option value="p2">Summer Beta</option>
+<option value="p3">Moonboard Sessions</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-on-surface-variant">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+</section>
+<!-- Media Capture Section (Bento Inspired) -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+<!-- Capture Action Card -->
+<div class="bg-surface-container rounded-xl p-8 flex flex-col items-center justify-center text-center space-y-4 border border-outline-variant/10 hover:bg-surface-container-high transition-colors group cursor-pointer">
+<div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl" style="">photo_camera</span>
+</div>
+<div>
+<h3 class="font-bold text-lg text-on-surface" style="">Capture Photo/Video</h3>
+<p class="text-sm text-on-surface-variant mt-1" style="">Open camera to record now</p>
+</div>
+</div>
+<!-- Upload Action Card -->
+<div class="bg-surface-container rounded-xl p-8 flex flex-col items-center justify-center text-center space-y-4 border border-outline-variant/10 hover:bg-surface-container-high transition-colors group cursor-pointer">
+<div class="w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center text-secondary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl" style="">cloud_upload</span>
+</div>
+<div>
+<h3 class="font-bold text-lg text-on-surface" style="">Upload from Library</h3>
+<p class="text-sm text-on-surface-variant mt-1" style="">Choose from your device gallery</p>
+</div>
+</div>
+</section>
+<!-- Form Fields -->
+<section class="space-y-6 mb-8">
+<!-- Hold Color Dropdown -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-bold uppercase tracking-wider text-on-surface-variant px-1" style="">Hold Color</label>
+<div class="relative">
+<select class="w-full bg-surface-container border border-outline-variant/20 text-on-surface rounded-xl p-4 appearance-none focus:outline-none focus:border-primary/50 transition-colors cursor-pointer">
+<option disabled="" selected="" value="">Select Color</option>
+<option value="red">Red</option>
+<option value="blue">Blue</option>
+<option value="green">Green</option>
+<option value="yellow">Yellow</option>
+<option value="black">Black</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-on-surface-variant">
+<span class="material-symbols-outlined" style="">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Difficulty Dropdown -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-bold uppercase tracking-wider text-on-surface-variant px-1" style="">Difficulty</label>
+<div class="relative">
+<select class="w-full bg-surface-container border border-outline-variant/20 text-on-surface rounded-xl p-4 appearance-none focus:outline-none focus:border-primary/50 transition-colors cursor-pointer">
+<option disabled="" selected="" value="">Select Grade/V-Scale</option>
+<option value="v0">V0</option>
+<option value="v1">V1</option>
+<option value="v2">V2</option>
+<option value="v3">V3</option>
+<option value="v4">V4</option>
+<option value="v5">V5+</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-on-surface-variant">
+<span class="material-symbols-outlined" style="">expand_more</span>
+</div>
+</div>
+</div>
+</section>
+<section class="mt-12 mb-20">
+<button class="w-full bg-primary text-on-primary font-black py-5 rounded-md uppercase tracking-[0.2em] hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-primary/20" style="">Post</button>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 bg-[#1c1b1b]/90 backdrop-blur-xl rounded-t-[2rem] z-50 shadow-[0px_-12px_32px_rgba(0,0,0,0.3)]">
+<!-- Home Inactive -->
+<a class="flex flex-col items-center justify-center text-zinc-500 p-3 hover:text-[#a8c8ff] transition-all active:scale-90 transition-transform duration-150" href="#" style="">
+<span class="material-symbols-outlined" style="">home</span>
+</a>
+<!-- Search Inactive -->
+<a class="flex flex-col items-center justify-center text-zinc-500 p-3 hover:text-[#a8c8ff] transition-all active:scale-90 transition-transform duration-150" href="#" style="">
+<span class="material-symbols-outlined" style="">search</span>
+</a>
+<!-- Record FAB (Active style since we are on record screen) -->
+<a class="flex items-center justify-center bg-primary text-on-primary w-14 h-14 rounded-full shadow-lg -mt-10 active:scale-95 transition-transform" href="#" style="">
+<span class="material-symbols-outlined" style='font-variation-settings: "FILL" 1; font-size: 32px;'>add_circle</span>
+</a>
+<!-- Fitness Center Inactive -->
+<a class="flex flex-col items-center justify-center text-zinc-500 p-3 hover:text-[#a8c8ff] transition-all active:scale-90 transition-transform duration-150" href="#" style="">
+<span class="material-symbols-outlined" style="">fitness_center</span>
+</a>
+<!-- Person Inactive -->
+<a class="flex flex-col items-center justify-center text-zinc-500 p-3 hover:text-[#a8c8ff] transition-all active:scale-90 transition-transform duration-150" href="#" style="">
+<span class="material-symbols-outlined" style="">person</span>
+</a>
+</nav>
+</body></html>

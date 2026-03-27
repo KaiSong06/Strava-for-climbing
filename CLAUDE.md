@@ -55,6 +55,10 @@ cd vision && uvicorn main:app --reload --port 8000
 # Database
 cd api && npm run db:migrate   # run pending migrations
 cd api && npm run db:seed      # seed gyms + test users
+cd api && npm run build        # tsc → dist/ (production)
+
+# Docker Compose (full stack: redis, api, vision, vision-worker)
+docker compose up              # requires api/.env and vision/.env
 ```
 
 ---
@@ -70,6 +74,9 @@ cd api && npm run db:seed      # seed gyms + test users
 - `INTERNAL_SECRET` — shared secret used by vision worker when POSTing results back to the API
 - `PORT` — defaults to `3001`
 - `VISION_SERVICE_URL` — base URL of the Python vision service (e.g. `http://localhost:8000`); required by the BullMQ worker
+- `CORS_ORIGIN` — comma-separated allowed origins (optional; if unset, CORS allows all origins)
+- `RESEND_API_KEY` — API key for Resend email service (used for verification and password reset emails)
+- `SENTRY_DSN` — Sentry DSN for error tracking (optional)
 
 **Mobile** (`mobile/.env`):
 - `EXPO_PUBLIC_API_URL` — backend URL (e.g. `http://localhost:3001`); must have `EXPO_PUBLIC_` prefix to be exposed to the client
@@ -90,6 +97,9 @@ cd api && npm run db:seed      # seed gyms + test users
 - Flash vs send logic: determined at write time by checking if any prior `ascents` row exists for `(user_id, problem_id)`. Never trust user self-report for this.
 - Problem retirement: cron job runs nightly, retires problems where `NOW() - first_upload_at > retirement_days` (default 14, configurable per gym).
 - Privacy: ascent `visibility` enum is `public | friends | private`. Even private ascents contribute anonymously to problem aggregate stats (`total_sends`, `consensus_grade`).
+- Feed pagination is **keyset-based** (not offset). Cursor is an ascent ID; the query uses a subquery to look up `logged_at` and paginates by `(logged_at DESC, id DESC)`. Reference SQL is in `docs/queries/feed.sql`.
+- Rate limiting: three tiers — `defaultLimiter` (100/min, applied globally), `authLimiter` (10/min, auth routes), `uploadLimiter` (20/min, POST /uploads). Apply the correct limiter when adding new routes.
+- Sentry error tracking is configured in `api/src/lib/sentry.ts`. The Sentry error handler must be registered **after** routes but **before** the global `errorHandler` middleware (see `api/src/index.ts`).
 
 ---
 
@@ -117,8 +127,9 @@ Key shared types beyond the tables: `FeedItem` (ascent + problem + user + gym ag
 - React Native: functional components with hooks. No class components.
 - API routes: thin controllers, logic in service layer (`/services`). Never put business logic in route handlers.
 - Input validation: use Zod in route handlers before calling services. The global `errorHandler` also catches `ZodError` and returns a 400.
-- Two auth middlewares in `api/src/middleware/auth.ts`: `requireAuth` (rejects with 401 if no/invalid token, attaches `req.user`) and `optionalAuth` (attaches `req.user` if a valid Bearer token is present, never rejects — use on public routes where auth enriches but isn't required). Import and apply per-route, not globally.
+- Three auth middlewares: `requireAuth` (rejects 401 if no/invalid token, attaches `req.user`) and `optionalAuth` (attaches `req.user` if valid token, never rejects — for public routes where auth enriches but isn't required) are in `api/src/middleware/auth.ts`. `requireVerified` (`api/src/middleware/requireVerified.ts`) — apply after `requireAuth` on routes that require email verification; returns 403 `EMAIL_NOT_VERIFIED` if not verified. Import and apply per-route, not globally.
 - Errors: throw `AppError` (from `api/src/middleware/errorHandler.ts`) in services; the global `errorHandler` middleware catches it and returns `{ error: { code, message } }`.
+- Email delivery uses Resend SDK (`api/src/services/emailService.ts`). Push notifications use Expo SDK (`api/src/services/pushService.ts`).
 - Never commit `.env` files. Use `.env.example` to document required vars.
 
 ---
@@ -131,7 +142,8 @@ Key shared types beyond the tables: `FeedItem` (ascent + problem + user + gym ag
 - **API client**: `mobile/src/lib/api.ts` exports `api.get/post/patch/delete`. Always use this instead of raw `fetch`. It reads `EXPO_PUBLIC_API_URL`, auto-attaches the Bearer token, handles 401s by refreshing the token (deduplicating concurrent refresh attempts), and throws `ApiError` on non-2xx responses.
 - **Auth store**: `mobile/src/stores/authStore.ts` — Zustand store persisted to `SecureStore`. Check `_hasHydrated` before reading auth state (the root layout gates navigation on this).
 - **Follow store**: `mobile/src/stores/followStore.ts` — Zustand store for follow state.
-- **Components**: `mobile/src/components/` — `FeedCard` (renders a single feed item), `FollowButton` (follow/unfollow toggle).
+- **Components**: `mobile/src/components/` — `FeedCard` (renders a single feed item), `FollowButton` (follow/unfollow toggle), `ProblemCard` (problem summary card).
+- **Tab screens**: `(tabs)/index.tsx` = feed, `record.tsx` = upload/log a climb, `search.tsx` = search, `gym.tsx` = gym browse, `account.tsx` = user profile. Auth screens: `(auth)/login.tsx`, `(auth)/register.tsx`.
 - **Upload service**: `mobile/src/services/uploadService.ts` — handles photo selection and multipart upload to the API.
 - **Shared types**: Import from `shared/types.ts` (not a published package; reference by relative path or configure the path in tsconfig).
 
@@ -150,3 +162,6 @@ Key shared types beyond the tables: `FeedItem` (ascent + problem + user + gym ag
 - Dispute creation: POST /uploads/:uploadId/dispute. Voting: POST /disputes/:disputeId/vote. Resolution requires ≥ 3 total votes with a majority. 'split' resolution creates a new problem and reassigns the upload.
 - Search: GET /search?q=&type=user|gym|all. Minimum 2 chars. Returns up to 5 users + 5 gyms, exact matches first.
 - The pgvector IVFFlat index (`idx_problems_hold_vector`, migration 004) uses `lists = 100`, tuned for up to ~10k active problems per gym. Pre-filtering by `gym_id + colour` (via `idx_problems_gym_colour`) is required before ANN queries to keep the index effective.
+- The `followsRouter` is mounted at `/users` (not `/follows`) — follow/unfollow endpoints live under `/users/:id/follow` etc. See `api/src/routes/index.ts`.
+- Docker Compose runs 4 services: `redis`, `api`, `vision`, and `vision-worker` (a separate container from the same API image that only runs the BullMQ worker). The vision-worker depends on both redis and vision.
+- JWT access tokens expire in 15 minutes; refresh tokens expire in 30 days and are stored as bcrypt hashes in the `refresh_tokens` table. bcrypt uses 12 salt rounds.

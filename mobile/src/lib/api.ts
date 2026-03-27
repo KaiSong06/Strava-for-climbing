@@ -68,7 +68,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  if (response.status === 401 && !_retry) {
+  if (response.status === 401 && !_retry && !path.startsWith('/auth/')) {
     // Deduplicate concurrent refresh attempts
     refreshPromise ??= doRefresh().finally(() => {
       refreshPromise = null;

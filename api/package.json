@@ -8,13 +8,14 @@
     "worker:vision": "ts-node-dev --respawn --transpile-only src/jobs/visionWorker.ts",
     "worker:retirement": "ts-node-dev --respawn --transpile-only src/jobs/retirementJob.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/src/index.js",
     "test": "jest",
     "migrate": "node -r ts-node/register scripts/migrate.ts",
     "db:migrate": "node -r ts-node/register scripts/migrate.ts",
     "db:seed": "node -r ts-node/register scripts/seed.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.500.0",
     "@sentry/node": "^10.45.0",
     "@supabase/supabase-js": "^2.99.3",
     "@types/multer": "^2.1.0",
