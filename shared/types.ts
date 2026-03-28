@@ -16,10 +16,9 @@ export interface UserProfile extends User {
   following_count: number;
 }
 
-/** Returned by auth endpoints and GET /users/me (includes email) */
+/** Returned by GET /users/me (includes phone) */
 export interface AuthUser extends UserProfile {
-  email: string;
-  email_verified: boolean;
+  phone: string;
 }
 
 // ─── Gyms ─────────────────────────────────────────────────────────────────────

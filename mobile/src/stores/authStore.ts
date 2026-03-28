@@ -1,64 +1,63 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import * as SecureStore from 'expo-secure-store';
-import type { AuthUser } from '../../../shared/types';
+import { Session } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 import { unregisterPushNotifications } from '../services/pushService';
-
-// SecureStore adapter for Zustand persist middleware
-const secureStorage = createJSONStorage(() => ({
-  getItem: (key: string) => SecureStore.getItemAsync(key),
-  setItem: (key: string, value: string) => SecureStore.setItemAsync(key, value),
-  removeItem: (key: string) => SecureStore.deleteItemAsync(key),
-}));
+import type { AuthUser } from '../../../shared/types';
 
 interface AuthState {
+  session: Session | null;
   user: AuthUser | null;
-  accessToken: string | null;
-  refreshToken: string | null;
-  /** True once SecureStore has finished loading persisted state on app start. */
+  /** Phone number waiting for OTP verification (set after signUp, before OTP confirm). */
+  pendingVerification: { phone: string } | null;
+  /** True once the initial session check has completed on app start. */
   _hasHydrated: boolean;
 
-  setAuth: (user: AuthUser, accessToken: string, refreshToken: string) => void;
-  updateAccessToken: (accessToken: string) => void;
+  /** Derived — convenience accessor for the Supabase access token. */
+  accessToken: string | null;
+
+  initialize: () => Promise<void>;
   updateUser: (user: AuthUser) => void;
-  logout: () => void;
-  setHasHydrated: (value: boolean) => void;
+  setPendingVerification: (phone: string | null) => void;
+  logout: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
-      _hasHydrated: false,
+export const useAuthStore = create<AuthState>()((set, get) => ({
+  session: null,
+  user: null,
+  pendingVerification: null,
+  _hasHydrated: false,
+  accessToken: null,
 
-      setAuth: (user, accessToken, refreshToken) =>
-        set({ user, accessToken, refreshToken }),
+  initialize: async () => {
+    // Get existing session from SecureStore (via Supabase client)
+    const { data: { session } } = await supabase.auth.getSession();
+    set({
+      session,
+      accessToken: session?.access_token ?? null,
+      _hasHydrated: true,
+    });
 
-      updateAccessToken: (accessToken) => set({ accessToken }),
+    // Listen for auth state changes (login, logout, token refresh)
+    supabase.auth.onAuthStateChange((_event, newSession) => {
+      set({
+        session: newSession,
+        accessToken: newSession?.access_token ?? null,
+      });
+      // Clear pending verification when a session arrives
+      if (newSession && get().pendingVerification) {
+        set({ pendingVerification: null });
+      }
+    });
+  },
 
-      updateUser: (user) => set({ user }),
+  updateUser: (user) => set({ user }),
 
-      logout: () => {
-        unregisterPushNotifications().catch(() => {});
-        set({ user: null, accessToken: null, refreshToken: null });
-      },
+  setPendingVerification: (phone) =>
+    set({ pendingVerification: phone ? { phone } : null }),
 
-      setHasHydrated: (value) => set({ _hasHydrated: value }),
-    }),
-    {
-      name: 'crux-auth',
-      storage: secureStorage,
-      // Only persist tokens and user — not ephemeral flags
-      partialize: (state) => ({
-        user: state.user,
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
-      }),
-      onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true);
-      },
-    },
-  ),
-);
+  logout: async () => {
+    unregisterPushNotifications().catch(() => {});
+    await supabase.auth.signOut();
+    set({ session: null, accessToken: null, user: null, pendingVerification: null });
+  },
+}));

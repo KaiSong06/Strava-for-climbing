@@ -16,7 +16,7 @@ Social bouldering app for iOS and Android. Users log climbs, follow friends, and
 **Object storage**: Supabase Storage (photos, 3D models)
 **Vision pipeline**: Python + FastAPI (separate service, async) — pipeline stages implemented; depth estimation (Stage 6 / MiDaS) is TODO/skipped for MVP
 **Job queue**: BullMQ (Redis-backed) — vision pipeline runs async, never in-request
-**Auth**: JWT + refresh tokens
+**Auth**: Supabase Auth (phone + password, SMS OTP verification via Twilio)
 
 ---
 
@@ -67,7 +67,7 @@ docker compose -f docker-compose.test.yml up --build
 ./test/enqueue-test-job.sh blue   # awaiting_confirmation (0.75–0.91)
 ./test/enqueue-test-job.sh green  # new problem (< 0.75)
 # Test env ports: Postgres 5433, Redis 6380, MinIO 9000 (console 9001), mock vision 8001, API 3001
-# Test user: test@example.com / testpass123 (pre-verified), gym_id: 11111111-0000-0000-0000-000000000001
+# Test auth: register through the app (seed users have no auth.users entries), gym_id: 11111111-0000-0000-0000-000000000001
 ```
 
 ---
@@ -77,16 +77,13 @@ docker compose -f docker-compose.test.yml up --build
 **API** (`api/.env`):
 - `DATABASE_URL` — Supabase PostgreSQL connection string (use the pooler URL from Supabase dashboard, port 6543)
 - `REDIS_URL` — Redis connection string (e.g. `redis://localhost:6379`)
-- `JWT_SECRET` — secret for signing access tokens
 - `SUPABASE_URL` — Supabase project URL (e.g. `https://[project-ref].supabase.co`)
 - `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (from dashboard → Settings → API)
+- `SUPABASE_JWT_SECRET` — Supabase JWT secret (from dashboard → Settings → API → JWT Secret)
 - `INTERNAL_SECRET` — shared secret used by vision worker when POSTing results back to the API
 - `PORT` — defaults to `3001`
 - `VISION_SERVICE_URL` — base URL of the Python vision service (e.g. `http://localhost:8000`); required by the BullMQ worker
 - `CORS_ORIGIN` — comma-separated allowed origins (optional; if unset, CORS allows all origins)
-- `RESEND_API_KEY` — API key for Resend email service (used for verification and password reset emails)
-- `EMAIL_FROM` — sender address (e.g. `Crux <noreply@crux.app>`)
-- `FRONTEND_URL` — used to build reset/verify links in emails (e.g. `http://localhost:3001`)
 - `SENTRY_DSN` — Sentry DSN for error tracking (optional)
 - `DB_SSL` — set to `"false"` to disable SSL for local/test Postgres (production uses SSL by default)
 - `STORAGE_BACKEND` — set to `s3` to use S3/MinIO instead of Supabase Storage (used in test env)
@@ -94,6 +91,8 @@ docker compose -f docker-compose.test.yml up --build
 
 **Mobile** (`mobile/.env`):
 - `EXPO_PUBLIC_API_URL` — backend URL (e.g. `http://localhost:3001`); must have `EXPO_PUBLIC_` prefix to be exposed to the client
+- `EXPO_PUBLIC_SUPABASE_URL` — Supabase project URL
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon/public key (from dashboard → Settings → API)
 
 **Vision** (`vision/.env`):
 - `REDIS_URL` — Redis connection string
@@ -120,14 +119,13 @@ docker compose -f docker-compose.test.yml up --build
 ## Data model (key tables)
 
 ```
-users           id, username, display_name, avatar_url, home_gym_id
+users           id, username, display_name, avatar_url, home_gym_id, phone
 gyms            id, name, city, lat, lng, default_retirement_days
 problems        id, gym_id, colour, hold_vector, model_url, status, consensus_grade, first_upload_at, retired_at
 ascents         id, user_id, problem_id, type (flash|send|attempt), user_grade, rating, visibility, logged_at
 uploads         id, user_id, problem_id, photo_urls[], processing_status (pending|processing|awaiting_confirmation|complete|matched|unmatched|failed), similarity_score
 follows         follower_id, following_id
 match_disputes  id, upload_id, reported_by, status, votes_confirm, votes_split
-refresh_tokens  id, user_id, token_hash (indexed), expires_at
 ```
 
 Key shared types beyond the tables: `FeedItem` (ascent + problem + user + gym aggregated for feed display), `PaginatedResponse<T>` (data[], cursor, has_more), `UserProfile` (User + follower/following counts + home_gym_name).
@@ -141,9 +139,9 @@ Key shared types beyond the tables: `FeedItem` (ascent + problem + user + gym ag
 - React Native: functional components with hooks. No class components.
 - API routes: thin controllers, logic in service layer (`/services`). Never put business logic in route handlers.
 - Input validation: use Zod in route handlers before calling services. The global `errorHandler` also catches `ZodError` and returns a 400.
-- Three auth middlewares: `requireAuth` (rejects 401 if no/invalid token, attaches `req.user`) and `optionalAuth` (attaches `req.user` if valid token, never rejects — for public routes where auth enriches but isn't required) are in `api/src/middleware/auth.ts`. `requireVerified` (`api/src/middleware/requireVerified.ts`) — apply after `requireAuth` on routes that require email verification; returns 403 `EMAIL_NOT_VERIFIED` if not verified. Import and apply per-route, not globally.
+- Two auth middlewares: `requireAuth` (rejects 401 if no/invalid Supabase JWT, attaches `req.user` with `userId`) and `optionalAuth` (attaches `req.user` if valid token, never rejects — for public routes where auth enriches but isn't required) are in `api/src/middleware/auth.ts`. The API verifies Supabase JWTs using `SUPABASE_JWT_SECRET`; `userId` comes from the JWT `sub` claim. No `requireVerified` middleware — Supabase Auth ensures phone is verified before issuing a session.
 - Errors: throw `AppError` (from `api/src/middleware/errorHandler.ts`) in services; the global `errorHandler` middleware catches it and returns `{ error: { code, message } }`.
-- Email delivery uses Resend SDK (`api/src/services/emailService.ts`). Push notifications use Expo SDK (`api/src/services/pushService.ts`).
+- Push notifications use Expo SDK (`api/src/services/pushService.ts`).
 - Never commit `.env` files. Use `.env.example` to document required vars.
 
 ---
@@ -154,20 +152,25 @@ Key shared types beyond the tables: `FeedItem` (ascent + problem + user + gym ag
 - **Server state**: TanStack React Query — use for all API calls.
 - **Client state**: Zustand — use for global UI/auth state.
 - **API client**: `mobile/src/lib/api.ts` exports `api.get/post/patch/delete`. Always use this instead of raw `fetch`. It reads `EXPO_PUBLIC_API_URL`, auto-attaches the Bearer token, handles 401s by refreshing the token (deduplicating concurrent refresh attempts), and throws `ApiError` on non-2xx responses.
-- **Auth store**: `mobile/src/stores/authStore.ts` — Zustand store persisted to `SecureStore`. Check `_hasHydrated` before reading auth state (the root layout gates navigation on this).
+- **Supabase client**: `mobile/src/lib/supabase.ts` — Supabase client with anon key + SecureStore session adapter. Used directly for auth calls (signUp, signIn, verifyOtp, signOut) and indirectly for session management.
+- **Auth store**: `mobile/src/stores/authStore.ts` — Zustand store. Calls `supabase.auth.getSession()` on init and subscribes to `onAuthStateChange` for reactive session updates. Exposes `session`, `user`, `accessToken`, `pendingVerification` (for OTP flow), and `_hasHydrated`.
 - **Follow store**: `mobile/src/stores/followStore.ts` — Zustand store for follow state.
-- **Theme**: `mobile/src/theme/colors.ts` exports the "Midnight Editorial" design token object (`colors`). Always import color values from here — never hardcode hex strings in component stylesheets.
+- **Theme**: `mobile/src/theme/` has three token files — always import from these, never hardcode values in stylesheets:
+  - `colors.ts` — exports `colors` (the "Midnight Editorial" palette). Never hardcode hex strings.
+  - `spacing.ts` — exports `spacing` (4-px grid: `xs`=4, `sm`=8, `md`=12, `lg`=16, `xl`=24, `xxl`=32, `xxxl`=48). Never hardcode numeric spacing values.
+  - `typography.ts` — exports `typography` (Inter-only scale: `displayLg/Md`, `headlineLg/Md`, `bodyLg/Md/Sm`, `labelMd/Sm`). Spread these onto `Text` styles.
+- **Design system rules** (Midnight Editorial): No 1px border lines for sectioning — use background color shifts between `surface-container` tiers instead. No drop shadows on cards — use tonal layering. No pure white `#FFFFFF` — use `colors.onSurface`. No dividers between list items — use spacing gaps or background color shifts.
 - **Components**: `mobile/src/components/` — `FeedCard` (renders a single feed item), `FollowButton` (follow/unfollow toggle), `ProblemCard` (problem summary card), `TabBar` (custom bottom bar with FAB for the record tab; also exports `TAB_BAR_HEIGHT = 72` used by `_layout.tsx` for `sceneStyle.paddingBottom`).
-- **Screen organisation**: Simple screens are a single file at `mobile/src/screens/<Name>Screen.tsx`. Complex screens use a folder: `mobile/src/screens/<Name>/` containing `<Name>Screen.tsx` and a `components/` subfolder for sub-components. Tab route files (e.g. `mobile/app/(tabs)/account.tsx`) are thin re-exports: `export { default } from '@/src/screens/Account/AccountScreen'`.
-- **Hooks**: `mobile/src/hooks/useVisionPipeline.ts` and `useMatchResult.ts` — **stubs only**; simulate delays but do not call the real API yet (TODO: wire to upload endpoint and match result polling).
-- **Tab screens**: `(tabs)/index.tsx` = feed, `record.tsx` = upload/log a climb, `search.tsx` = search, `gym.tsx` = gym browse, `account.tsx` = user profile. Auth screens: `(auth)/login.tsx`, `(auth)/register.tsx`.
+- **Screen organisation**: Simple screens are a single file at `mobile/src/screens/<Name>Screen.tsx`. Complex screens use a folder: `mobile/src/screens/<Name>/` containing `<Name>Screen.tsx` and a `components/` subfolder for sub-components (current complex screens: Account, Gym, Search). All tab route files (e.g. `mobile/app/(tabs)/account.tsx`) are thin re-exports: `export { default } from '@/src/screens/Account/AccountScreen'`.
+- **Hooks**: `mobile/src/hooks/useVisionPipeline.ts` — wired to real upload/poll/confirm API. `useMatchResult.ts` — pure derivation of match state from upload response.
+- **Tab screens**: `(tabs)/index.tsx` = feed, `record.tsx` = upload/log a climb, `search.tsx` = search, `gym.tsx` = gym browse, `account.tsx` = user profile. Auth screens: `(auth)/login.tsx`, `(auth)/register.tsx`, `(auth)/verify-phone.tsx`.
 - **Upload service**: `mobile/src/services/uploadService.ts` — handles photo selection and multipart upload to the API.
 - **Shared types**: Import from `shared/types.ts` (not a published package; reference by relative path or configure the path in tsconfig).
-- **Account screen**: Recent activity is currently mocked (`MOCK_ACTIVITIES` in `AccountScreen.tsx`). TODO: replace with a real query to the ascents endpoint once it's wired.
+- **Mock data**: The Home screen uses `MOCK_FEED` in `HomeScreen.tsx` (TODO: replace with real API queries). The Account screen is partially API-wired — it queries `/users/:username/ascents` via React Query and converts `FeedItem` responses to `AscentActivity` format, with fallback empty state. The Gym and Search screens use local mock data (`mockGyms.ts`, `mockSearchData.ts`) — TODO: wire to API.
 
 ## UI References
 
-`UI_References/` contains HTML mockups and design notes for key screens (currently `Crux_Account/` and `Crux_Home/`). These are design specs only — not production code. Reference them when implementing or restyling a screen.
+`UI_References/` contains HTML mockups and DESIGN.md specs for key screens (`Crux_Account/`, `Crux_Home/`, `Crux_Search/`, `Crux_Gym/`). Design specs only — not production code. Reference them when implementing or restyling a screen. The DESIGN.md files in these directories also contain the full Midnight Editorial design system specification.
 
 ---
 
@@ -186,8 +189,8 @@ Key shared types beyond the tables: `FeedItem` (ascent + problem + user + gym ag
 - The pgvector IVFFlat index (`idx_problems_hold_vector`, migration 004) uses `lists = 100`, tuned for up to ~10k active problems per gym. Pre-filtering by `gym_id + colour` (via `idx_problems_gym_colour`) is required before ANN queries to keep the index effective.
 - The `followsRouter` is mounted at `/users` (not `/follows`) — follow/unfollow endpoints live under `/users/:id/follow` etc. See `api/src/routes/index.ts`.
 - Docker Compose runs 4 services: `redis`, `api`, `vision`, and `vision-worker` (a separate container from the same API image that only runs the BullMQ worker). The vision-worker depends on both redis and vision.
-- JWT access tokens expire in 15 minutes; refresh tokens expire in 30 days and are stored as bcrypt hashes in the `refresh_tokens` table. bcrypt uses 12 salt rounds.
+- Auth is handled by Supabase Auth (phone + password, SMS OTP via Twilio). The API validates Supabase JWTs using `SUPABASE_JWT_SECRET`. Mobile calls Supabase Auth directly for signup/login/OTP verification. A Postgres trigger on `auth.users` auto-inserts into `public.users`. Phone verification is implicit — Supabase won't issue a session until OTP is verified.
+- Phone numbers are Canada-only for now: mobile UI collects 10 digits, app auto-prepends `+1`. Stored in E.164 format.
 - Storage backend is toggled by `STORAGE_BACKEND=s3` env var. Default is Supabase Storage. When `s3`, the service uses `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_PUBLIC_URL`. The test environment always uses S3 (MinIO). Both backends expose `uploadBase64Image` and `uploadBuffer` from `api/src/services/storage.ts` — never call storage backends directly.
-- Email verification tokens (migration 007) and password reset tokens (migration 005) are stored as SHA256 hashes, never raw. Both are one-time use (`used_at`), with 24-hour and 1-hour expiry respectively. Password reset atomically invalidates all refresh tokens for the user.
-- The data model has three new tables not listed above: `password_reset_tokens`, `email_verification_tokens` (both with `token_hash`, `expires_at`, `used_at`), and `push_tokens` (Expo push token per user, unique constraint).
+- The `push_tokens` table stores Expo push tokens per user (unique constraint).
 - The vision service is deployed to Fly.io (`vision/fly.toml`) in the `yyz` region, 2 CPUs / 4 GB RAM, min 0 machines (scales to zero). The API is hosted separately.

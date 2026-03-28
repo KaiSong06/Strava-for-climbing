@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
-import { requireVerified } from '../middleware/requireVerified';
 import { AppError } from '../middleware/errorHandler';
 import { pool } from '../db/pool';
 import * as userService from '../services/userService';
@@ -14,7 +13,7 @@ const paginationSchema = z.object({
 });
 
 // POST /users/:username/follow
-followsRouter.post('/:username/follow', requireAuth, requireVerified, async (req, res, next) => {
+followsRouter.post('/:username/follow', requireAuth, async (req, res, next) => {
   try {
     const target = await userService.getByUsername(req.params['username']!);
     const followerId = req.user!.userId;

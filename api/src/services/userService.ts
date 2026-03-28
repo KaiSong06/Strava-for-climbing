@@ -1,7 +1,18 @@
 import { pool } from '../db/pool';
 import { AppError } from '../middleware/errorHandler';
 import { uploadBase64Image } from './storage';
-import type { AuthUser } from './authService';
+export interface AuthUser {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_url: string | null;
+  home_gym_id: string | null;
+  phone: string;
+  home_gym_name: string | null;
+  follower_count: number;
+  following_count: number;
+  created_at: string;
+}
 
 export interface UserProfile {
   id: string;
@@ -26,7 +37,7 @@ const PROFILE_SELECT = `
 
 export async function getMe(userId: string): Promise<AuthUser> {
   const { rows } = await pool.query<AuthUser>(
-    `SELECT u.id, u.username, u.display_name, u.avatar_url, u.home_gym_id, u.email, u.created_at,
+    `SELECT u.id, u.username, u.display_name, u.avatar_url, u.home_gym_id, u.phone, u.created_at,
             g.name AS home_gym_name,
             (SELECT COUNT(*) FROM follows WHERE following_id = u.id)::int AS follower_count,
             (SELECT COUNT(*) FROM follows WHERE follower_id  = u.id)::int AS following_count

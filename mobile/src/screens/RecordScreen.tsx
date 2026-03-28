@@ -27,8 +27,13 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useVisionPipeline } from '@/src/hooks/useVisionPipeline';
 import { useMatchResult } from '@/src/hooks/useMatchResult';
+import { useAuthStore } from '@/src/stores/authStore';
+import { colors } from '@/src/theme/colors';
+import { spacing } from '@/src/theme/spacing';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
+
+const MAX_PHOTOS = 5;
 
 const HOLD_COLOURS = [
   { label: 'Red',    hex: '#ef4444' },
@@ -59,8 +64,8 @@ const PROCESSING_MESSAGES = ['Analysing holds…', 'Matching problem…', 'Almos
 
 export default function RecordScreen() {
   // Form state
-  const [project, setProject]   = useState<string | null>(null);
-  const [mediaUri, setMediaUri] = useState<string | null>(null);
+  const [project, setProject]       = useState<string | null>(null);
+  const [photos, setPhotos]         = useState<Array<{ uri: string }>>([]);
   const [holdColor, setHoldColor]   = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState<string | null>(null);
 
@@ -69,29 +74,39 @@ export default function RecordScreen() {
   const [colorPickerVisible,      setColorPickerVisible]      = useState(false);
   const [difficultyPickerVisible, setDifficultyPickerVisible] = useState(false);
 
-  // Processing overlay
-  const [isProcessing, setIsProcessing] = useState(false);
+  // Processing message cycling
   const [processingMessage, setProcessingMessage] = useState(PROCESSING_MESSAGES[0]!);
 
-  // Hooks (wired in Phase 4b)
-  const { submit: submitVision, status: visionStatus, result: visionResult } = useVisionPipeline();
-  const { matchedProblem, confidence, needsConfirmation } = useMatchResult();
+  // Auth — gym_id from the user's home gym
+  const gymId = useAuthStore((s) => s.user?.home_gym_id ?? null);
 
-  // Stub references — consumed by Phase 4b wiring
-  useEffect(() => {
-    // Phase 4b: react to vision pipeline status changes
-  }, [visionStatus, visionResult]);
+  // Pipeline hooks
+  const {
+    status: pipelineStatus,
+    uploadProgress,
+    result: pipelineResult,
+    error: pipelineError,
+    submit: submitPipeline,
+    confirm: confirmPipeline,
+    reset: resetPipeline,
+  } = useVisionPipeline();
 
-  useEffect(() => {
-    // Phase 4b: handle match confirmation flow
-  }, [matchedProblem, confidence, needsConfirmation]);
+  const {
+    matchedProblemId,
+    confidence,
+    needsConfirmation,
+    isAutoMatched,
+  } = useMatchResult(pipelineResult);
+
+  const showOverlay = pipelineStatus === 'uploading' || pipelineStatus === 'processing';
+  const showResult = pipelineStatus === 'matched' || pipelineStatus === 'awaiting_confirmation';
 
   // ── Processing animation ───────────────────────────────────────────────────
 
   const spinnerOpacity = useSharedValue(1);
 
   useEffect(() => {
-    if (isProcessing) {
+    if (showOverlay) {
       spinnerOpacity.value = withRepeat(
         withTiming(0.3, { duration: 800, easing: Easing.inOut(Easing.ease) }),
         -1,
@@ -101,16 +116,16 @@ export default function RecordScreen() {
       cancelAnimation(spinnerOpacity);
       spinnerOpacity.value = 1;
     }
-  }, [isProcessing, spinnerOpacity]);
+  }, [showOverlay, spinnerOpacity]);
 
   const spinnerStyle = useAnimatedStyle(() => ({
     opacity: spinnerOpacity.value,
   }));
 
-  // ── Processing message cycling + auto-dismiss ──────────────────────────────
+  // ── Processing message cycling ─────────────────────────────────────────────
 
   useEffect(() => {
-    if (!isProcessing) return;
+    if (pipelineStatus !== 'processing') return;
 
     let i = 0;
     setProcessingMessage(PROCESSING_MESSAGES[0]!);
@@ -120,21 +135,31 @@ export default function RecordScreen() {
       setProcessingMessage(PROCESSING_MESSAGES[i]!);
     }, 1000);
 
-    const dismiss = setTimeout(() => {
-      clearInterval(interval);
-      setIsProcessing(false);
-      Alert.alert('Climb logged!', 'Your climb has been analysed.', [{ text: 'OK' }]);
-      setProject(null);
-      setMediaUri(null);
-      setHoldColor(null);
-      setDifficulty(null);
-    }, 2500);
+    return () => clearInterval(interval);
+  }, [pipelineStatus]);
 
-    return () => {
-      clearInterval(interval);
-      clearTimeout(dismiss);
-    };
-  }, [isProcessing]);
+  // ── Error handling ─────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (pipelineStatus !== 'failed') return;
+    Alert.alert(
+      'Upload failed',
+      pipelineError ?? 'Something went wrong. Please try again.',
+      [{ text: 'Try Again', onPress: resetPipeline }],
+    );
+  }, [pipelineStatus, pipelineError, resetPipeline]);
+
+  // ── Confirmed success ──────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (pipelineStatus !== 'confirmed') return;
+    Alert.alert('Climb logged!', 'Your ascent has been recorded.', [{ text: 'OK' }]);
+    setProject(null);
+    setPhotos([]);
+    setHoldColor(null);
+    setDifficulty(null);
+    resetPipeline();
+  }, [pipelineStatus, resetPipeline]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -146,34 +171,57 @@ export default function RecordScreen() {
     }
     const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
     if (!result.canceled && result.assets[0]) {
-      setMediaUri(result.assets[0].uri);
+      setPhotos((prev) => [...prev, { uri: result.assets[0]!.uri }].slice(0, MAX_PHOTOS));
     }
   }, []);
 
   const handleUploadFromLibrary = useCallback(async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
-    if (!result.canceled && result.assets[0]) {
-      setMediaUri(result.assets[0].uri);
+    const remaining = MAX_PHOTOS - photos.length;
+    if (remaining <= 0) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+      allowsMultipleSelection: true,
+      selectionLimit: remaining,
+    });
+    if (!result.canceled) {
+      setPhotos((prev) =>
+        [...prev, ...result.assets.map((a) => ({ uri: a.uri }))].slice(0, MAX_PHOTOS),
+      );
     }
+  }, [photos.length]);
+
+  const handleRemovePhoto = useCallback((index: number) => {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const handleRetake = useCallback(() => setMediaUri(null), []);
-
   const handlePost = useCallback(() => {
-    if (!mediaUri || !holdColor) return;
-    console.log({
-      mediaUri,
-      holdColour: holdColor,
-      grade: difficulty ?? '',
-      project: project ?? 'new',
-      ascentType: 'attempt',
-    });
-    // TODO: wire to useVisionPipeline()
-    void submitVision(mediaUri, holdColor);
-    setIsProcessing(true);
-  }, [mediaUri, holdColor, difficulty, project, submitVision]);
+    if (photos.length < 1 || !holdColor || !gymId) return;
+    void submitPipeline(photos, holdColor, gymId);
+  }, [photos, holdColor, gymId, submitPipeline]);
 
-  const isPostEnabled = mediaUri !== null && holdColor !== null;
+  const handleConfirmMatch = useCallback(() => {
+    if (!matchedProblemId) return;
+    void confirmPipeline({
+      problemId: matchedProblemId,
+      user_grade: difficulty,
+      rating: null,
+      notes: null,
+      visibility: 'public',
+    });
+  }, [matchedProblemId, difficulty, confirmPipeline]);
+
+  const handleNewProblem = useCallback(() => {
+    void confirmPipeline({
+      problemId: 'new',
+      user_grade: difficulty,
+      rating: null,
+      notes: null,
+      visibility: 'public',
+    });
+  }, [difficulty, confirmPipeline]);
+
+  const isPostEnabled = photos.length >= 1 && holdColor !== null && gymId !== null;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -186,7 +234,7 @@ export default function RecordScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: 24 }]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: spacing.xl }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -196,35 +244,51 @@ export default function RecordScreen() {
             <Text style={[styles.pickerText, !project && styles.pickerPlaceholder]}>
               {project ? (PROJECTS.find((p) => p.id === project)?.label ?? 'Unknown') : 'Select Project'}
             </Text>
-            <MaterialCommunityIcons name="chevron-down" size={20} color="#c2c6d4" />
+            <MaterialCommunityIcons name="chevron-down" size={20} color={colors.onSurfaceVariant} />
           </Pressable>
 
           {/* MEDIA */}
           <View style={styles.mediaSectionGap} />
-          {!mediaUri ? (
+          {photos.length === 0 ? (
             <>
               <Pressable style={styles.actionCard} onPress={handleCapturePhoto}>
                 <View style={[styles.iconCircle, { backgroundColor: 'rgba(168,200,255,0.1)' }]}>
-                  <MaterialCommunityIcons name="camera" size={28} color="#a8c8ff" />
+                  <MaterialCommunityIcons name="camera" size={28} color={colors.primary} />
                 </View>
-                <Text style={styles.cardTitle}>Capture Photo/Video</Text>
-                <Text style={styles.cardSubtitle}>Open camera to record now</Text>
+                <Text style={styles.cardTitle}>Capture Photo</Text>
+                <Text style={styles.cardSubtitle}>Open camera to take a photo</Text>
               </Pressable>
 
               <Pressable style={styles.actionCard} onPress={handleUploadFromLibrary}>
                 <View style={[styles.iconCircle, { backgroundColor: 'rgba(178,199,240,0.1)' }]}>
-                  <MaterialCommunityIcons name="cloud-upload" size={28} color="#b2c7f0" />
+                  <MaterialCommunityIcons name="cloud-upload" size={28} color={colors.secondary} />
                 </View>
                 <Text style={styles.cardTitle}>Upload from Library</Text>
                 <Text style={styles.cardSubtitle}>Choose from your device gallery</Text>
               </Pressable>
             </>
           ) : (
-            <View style={styles.thumbnailContainer}>
-              <Image source={{ uri: mediaUri }} style={styles.thumbnail} resizeMode="cover" />
-              <Pressable style={styles.retakeButton} onPress={handleRetake}>
-                <MaterialCommunityIcons name="restore" size={18} color="#e5e2e1" />
-              </Pressable>
+            <View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.photoStrip}
+              >
+                {photos.map((photo, index) => (
+                  <View key={photo.uri} style={styles.photoThumb}>
+                    <Image source={{ uri: photo.uri }} style={styles.photoThumbImage} resizeMode="cover" />
+                    <Pressable style={styles.photoRemoveButton} onPress={() => handleRemovePhoto(index)}>
+                      <MaterialCommunityIcons name="close" size={14} color={colors.onSurface} />
+                    </Pressable>
+                  </View>
+                ))}
+                {photos.length < MAX_PHOTOS && (
+                  <Pressable style={styles.addPhotoButton} onPress={handleUploadFromLibrary}>
+                    <MaterialCommunityIcons name="plus" size={24} color={colors.onSurfaceVariant} />
+                  </Pressable>
+                )}
+              </ScrollView>
+              <Text style={styles.photoCounter}>{photos.length}/{MAX_PHOTOS} photos</Text>
             </View>
           )}
 
@@ -239,7 +303,7 @@ export default function RecordScreen() {
                   : 'Select Color'}
               </Text>
             </View>
-            <MaterialCommunityIcons name="chevron-down" size={20} color="#c2c6d4" />
+            <MaterialCommunityIcons name="chevron-down" size={20} color={colors.onSurfaceVariant} />
           </Pressable>
 
           {/* DIFFICULTY */}
@@ -248,7 +312,7 @@ export default function RecordScreen() {
             <Text style={[styles.pickerText, !difficulty && styles.pickerPlaceholder]}>
               {difficulty ?? 'Select Grade/V-Scale'}
             </Text>
-            <MaterialCommunityIcons name="chevron-down" size={20} color="#c2c6d4" />
+            <MaterialCommunityIcons name="chevron-down" size={20} color={colors.onSurfaceVariant} />
           </Pressable>
 
           {/* POST */}
@@ -259,17 +323,64 @@ export default function RecordScreen() {
           >
             <Text style={styles.postButtonText}>Post</Text>
           </Pressable>
+          {!gymId && (
+            <Text style={styles.noGymHint}>Set your home gym in Settings to log climbs</Text>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
 
       {/* Processing overlay */}
-      {isProcessing && (
+      {showOverlay && (
         <View style={styles.overlay}>
           <Animated.View style={spinnerStyle}>
-            <ActivityIndicator size="large" color="#a8c8ff" />
+            <ActivityIndicator size="large" color={colors.primary} />
           </Animated.View>
-          <Text style={styles.processingText}>{processingMessage}</Text>
-          {/* TODO: wire to useVisionPipeline() */}
+          <Text style={styles.processingText}>
+            {pipelineStatus === 'uploading'
+              ? `Uploading… ${Math.round(uploadProgress * 100)}%`
+              : processingMessage}
+          </Text>
+        </View>
+      )}
+
+      {/* Match result overlay */}
+      {showResult && (
+        <View style={styles.overlay}>
+          {isAutoMatched ? (
+            <View style={styles.resultContent}>
+              <MaterialCommunityIcons name="check-circle" size={56} color={colors.primary} />
+              <Text style={styles.resultHeading}>Problem identified!</Text>
+              {confidence !== null && (
+                <View style={styles.confidenceBadge}>
+                  <Text style={styles.confidenceText}>{confidence}% match</Text>
+                </View>
+              )}
+              <Pressable style={styles.resultButtonPrimary} onPress={handleConfirmMatch}>
+                <Text style={styles.resultButtonPrimaryText}>Log Ascent</Text>
+              </Pressable>
+              <Pressable style={styles.resultButtonSecondary} onPress={handleNewProblem}>
+                <Text style={styles.resultButtonSecondaryText}>Not my climb — new problem</Text>
+              </Pressable>
+            </View>
+          ) : needsConfirmation ? (
+            <View style={styles.resultContent}>
+              <MaterialCommunityIcons name="help-circle-outline" size={56} color={colors.tertiary} />
+              <Text style={styles.resultHeading}>Is this your climb?</Text>
+              {confidence !== null && (
+                <View style={styles.confidenceBadge}>
+                  <Text style={styles.confidenceText}>{confidence}% match</Text>
+                </View>
+              )}
+              {matchedProblemId ? (
+                <Pressable style={styles.resultButtonPrimary} onPress={handleConfirmMatch}>
+                  <Text style={styles.resultButtonPrimaryText}>Yes, log it</Text>
+                </Pressable>
+              ) : null}
+              <Pressable style={styles.resultButtonSecondary} onPress={handleNewProblem}>
+                <Text style={styles.resultButtonSecondaryText}>No, it's a new problem</Text>
+              </Pressable>
+            </View>
+          ) : null}
         </View>
       )}
 
@@ -308,7 +419,7 @@ export default function RecordScreen() {
                   {p.label}
                 </Text>
                 {project === p.id && (
-                  <MaterialCommunityIcons name="check" size={16} color="#a8c8ff" />
+                  <MaterialCommunityIcons name="check" size={16} color={colors.primary} />
                 )}
               </Pressable>
             ))}
@@ -343,7 +454,7 @@ export default function RecordScreen() {
                   </Text>
                 </View>
                 {holdColor === color.hex && (
-                  <MaterialCommunityIcons name="check" size={16} color="#a8c8ff" />
+                  <MaterialCommunityIcons name="check" size={16} color={colors.primary} />
                 )}
               </Pressable>
             ))}
@@ -376,7 +487,7 @@ export default function RecordScreen() {
                     {item}
                   </Text>
                   {difficulty === item && (
-                    <MaterialCommunityIcons name="check" size={16} color="#a8c8ff" />
+                    <MaterialCommunityIcons name="check" size={16} color={colors.primary} />
                   )}
                 </Pressable>
               )}
@@ -392,11 +503,11 @@ export default function RecordScreen() {
 
 const styles = StyleSheet.create({
   // Layout
-  container: { flex: 1, backgroundColor: '#131313' },
+  container: { flex: 1, backgroundColor: colors.background },
   flex:      { flex: 1 },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
   },
 
   // Section labels
@@ -405,18 +516,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    color: '#c2c6d4',
-    marginBottom: 8,
+    color: colors.onSurfaceVariant,
+    marginBottom: spacing.sm,
   },
   sectionLabelSpaced: {
-    marginTop: 24,
+    marginTop: spacing.xl,
   },
 
   // Picker rows
   pickerRow: {
-    backgroundColor: '#201f1f',
+    backgroundColor: colors.surfaceContainer,
     borderRadius: 12,
-    padding: 16,
+    padding: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -426,14 +537,14 @@ const styles = StyleSheet.create({
   pickerRowInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   pickerText: {
     fontSize: 16,
-    color: '#e5e2e1',
+    color: colors.onSurface,
   },
   pickerPlaceholder: {
-    color: '#c2c6d4',
+    color: colors.onSurfaceVariant,
   },
 
   // Color dot
@@ -444,18 +555,18 @@ const styles = StyleSheet.create({
   },
 
   // Media section
-  mediaSectionGap: { height: 24 },
+  mediaSectionGap: { height: spacing.xl },
 
   actionCard: {
-    backgroundColor: '#201f1f',
+    backgroundColor: colors.surfaceContainer,
     borderRadius: 12,
-    paddingVertical: 32,
-    paddingHorizontal: 24,
+    paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.xl,
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: 'rgba(66,71,82,0.10)',
-    gap: 12,
+    gap: spacing.md,
   },
   iconCircle: {
     width: 64,
@@ -467,55 +578,81 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#e5e2e1',
+    color: colors.onSurface,
   },
   cardSubtitle: {
     fontSize: 14,
-    color: '#c2c6d4',
+    color: colors.onSurfaceVariant,
     textAlign: 'center',
   },
 
-  // Thumbnail preview
-  thumbnailContainer: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: 12,
+  // Photo strip (multi-photo)
+  photoStrip: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingBottom: spacing.xs,
   },
-  thumbnail: {
+  photoThumb: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  photoThumbImage: {
     width: '100%',
     height: '100%',
   },
-  retakeButton: {
+  photoRemoveButton: {
     position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    top: 4,
+    right: 4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: 'rgba(14,14,14,0.7)',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  addPhotoButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceContainer,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.outlineVariant,
+  },
+  photoCounter: {
+    fontSize: 12,
+    color: colors.onSurfaceVariant,
+    marginTop: spacing.xs,
+  },
 
   // POST button
   postButton: {
-    backgroundColor: '#a8c8ff',
+    backgroundColor: colors.primary,
     borderRadius: 6,
     paddingVertical: 20,
     alignItems: 'center',
-    marginTop: 48,
+    marginTop: spacing.xxxl,
   },
   postButtonDisabled: {
     opacity: 0.4,
   },
   postButtonText: {
-    color: '#003062',
+    color: colors.onPrimary,
     fontSize: 16,
     fontWeight: '900',
     letterSpacing: 3.2,
     textTransform: 'uppercase',
+  },
+  noGymHint: {
+    fontSize: 13,
+    color: colors.error,
+    textAlign: 'center',
+    marginTop: spacing.sm,
   },
 
   // Processing overlay
@@ -527,9 +664,57 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   processingText: {
-    color: '#e5e2e1',
+    color: colors.onSurface,
     fontSize: 16,
     marginTop: 20,
+  },
+
+  // Match result overlay content
+  resultContent: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.xxl,
+    gap: spacing.lg,
+  },
+  resultHeading: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.onSurface,
+    textAlign: 'center',
+  },
+  confidenceBadge: {
+    backgroundColor: colors.primaryContainer,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+    borderRadius: 16,
+  },
+  confidenceText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.onSurface,
+  },
+  resultButtonPrimary: {
+    backgroundColor: colors.primary,
+    borderRadius: 6,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xxxl,
+    alignItems: 'center',
+    width: '100%',
+    marginTop: spacing.sm,
+  },
+  resultButtonPrimaryText: {
+    color: colors.onPrimary,
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  resultButtonSecondary: {
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  resultButtonSecondaryText: {
+    color: colors.onSurfaceVariant,
+    fontSize: 14,
   },
 
   // Picker modals
@@ -539,12 +724,12 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: '#1c1b1b',
+    backgroundColor: colors.surfaceContainerLow,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 20,
-    paddingHorizontal: 16,
-    paddingBottom: 32,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xxl,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -12 },
     shadowOpacity: 0.4,
@@ -559,14 +744,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    color: '#c2c6d4',
-    marginBottom: 12,
+    color: colors.onSurfaceVariant,
+    marginBottom: spacing.md,
   },
   modalRow: {
-    paddingVertical: 16,
-    paddingHorizontal: 12,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
     borderRadius: 8,
-    backgroundColor: '#201f1f',
+    backgroundColor: colors.surfaceContainer,
     marginBottom: 4,
     flexDirection: 'row',
     alignItems: 'center',
@@ -575,17 +760,17 @@ const styles = StyleSheet.create({
   modalRowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
   },
   modalRowText: {
     fontSize: 16,
-    color: '#e5e2e1',
+    color: colors.onSurface,
   },
   modalRowActiveText: {
-    color: '#a8c8ff',
+    color: colors.primary,
   },
   modalRowCreate: {
-    color: '#a8c8ff',
+    color: colors.primary,
     fontWeight: '700',
   },
 });

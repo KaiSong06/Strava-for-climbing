@@ -71,21 +71,33 @@ export default Sentry.wrap(RootLayout);
 function AuthGate() {
   const router = useRouter();
   const segments = useSegments();
-  const accessToken = useAuthStore((s) => s.accessToken);
+  const session = useAuthStore((s) => s.session);
+  const pendingVerification = useAuthStore((s) => s.pendingVerification);
   const hasHydrated = useAuthStore((s) => s._hasHydrated);
+  const initialize = useAuthStore((s) => s.initialize);
+
+  // Initialize Supabase auth on first mount
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
 
   useEffect(() => {
-    // Wait until SecureStore finishes loading persisted tokens
     if (!hasHydrated) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+    const onVerifyScreen = inAuthGroup && segments[1] === 'verify-phone';
 
-    if (!accessToken && !inAuthGroup) {
+    if (!session && pendingVerification && !onVerifyScreen) {
+      // Signed up but OTP not yet verified
+      router.replace('/(auth)/verify-phone');
+    } else if (!session && !pendingVerification && !inAuthGroup) {
+      // Not logged in — go to login
       router.replace('/(auth)/login');
-    } else if (accessToken && inAuthGroup) {
+    } else if (session && inAuthGroup) {
+      // Logged in — leave auth group
       router.replace('/(tabs)');
     }
-  }, [accessToken, hasHydrated, segments, router]);
+  }, [session, pendingVerification, hasHydrated, segments, router]);
 
   return null;
 }

@@ -9,36 +9,37 @@ import {
 } from 'react-native';
 import { Link } from 'expo-router';
 import { Text, View } from '@/components/Themed';
-import { api, ApiError } from '@/src/lib/api';
-import { useAuthStore } from '@/src/stores/authStore';
-import type { AuthUser } from '../../../shared/types';
-
-interface LoginResponse {
-  user: AuthUser;
-  accessToken: string;
-  refreshToken: string;
-}
+import { supabase } from '@/src/lib/supabase';
 
 export default function LoginScreen() {
-  const setAuth = useAuthStore((s) => s.setAuth);
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function handleLogin() {
     setError('');
-    if (!email || !password) {
-      setError('Email and password are required.');
+    if (!phone || !password) {
+      setError('Phone number and password are required.');
+      return;
+    }
+    if (!/^\d{10}$/.test(phone)) {
+      setError('Enter a valid 10-digit phone number.');
       return;
     }
     setLoading(true);
     try {
-      const result = await api.post<LoginResponse>('/auth/login', { email, password });
-      setAuth(result.user, result.accessToken, result.refreshToken);
-      // Auth gate in _layout.tsx handles the navigation redirect automatically
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Login failed. Please try again.');
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        phone: `+1${phone}`,
+        password,
+      });
+      if (signInError) {
+        setError(signInError.message);
+        return;
+      }
+      // onAuthStateChange fires SIGNED_IN → auth store updates → AuthGate navigates
+    } catch {
+      setError('Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -55,12 +56,11 @@ export default function LoginScreen() {
 
         <TextInput
           style={styles.input}
-          placeholder="Email"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          textContentType="emailAddress"
-          value={email}
-          onChangeText={setEmail}
+          placeholder="Phone number (10 digits)"
+          keyboardType="phone-pad"
+          maxLength={10}
+          value={phone}
+          onChangeText={setPhone}
         />
         <TextInput
           style={styles.input}

@@ -18,15 +18,21 @@ export function RecentActivity({ activities, onViewAll, onActivityPress }: Props
         </Pressable>
       </View>
 
-      <View style={styles.cardList}>
-        {activities.map((activity) => (
-          <ActivityCard
-            key={activity.id}
-            activity={activity}
-            onPress={() => onActivityPress(activity)}
-          />
-        ))}
-      </View>
+      {activities.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>No climbs logged yet</Text>
+        </View>
+      ) : (
+        <View style={styles.cardList}>
+          {activities.map((activity) => (
+            <ActivityCard
+              key={activity.id}
+              activity={activity}
+              onPress={() => onActivityPress(activity)}
+            />
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -54,5 +60,13 @@ const styles = StyleSheet.create({
   },
   cardList: {
     gap: 24,
+  },
+  emptyState: {
+    paddingVertical: 32,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: colors.onSurfaceVariant,
   },
 });

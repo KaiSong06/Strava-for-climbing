@@ -22,8 +22,8 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
       {state.routes.map((route, index) => {
         const options = descriptors[route.key]?.options;
 
-        // Skip hidden routes (href: null)
-        if (options?.href === null) return null;
+        // Skip hidden routes (href: null) — Expo Router injects href but bottom-tabs types don't include it
+        if ((options as { href?: string | null })?.href === null) return null;
 
         const isFocused = state.index === index;
         const isRecord = route.name === 'record';

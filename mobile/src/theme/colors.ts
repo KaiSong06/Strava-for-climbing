@@ -11,6 +11,7 @@ export const colors = {
   primary:                   '#a8c8ff',
   onPrimary:                 '#003062',
   primaryContainer:          '#005fb8',
+  secondary:                 '#b2c7f0',
   outline:                   '#8c919d',
   outlineVariant:            '#424752',
   tertiary:                  '#ffb691',

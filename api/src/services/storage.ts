@@ -1,29 +1,11 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import crypto from 'crypto';
 import { AppError } from '../middleware/errorHandler';
+import { supabaseAdmin } from '../lib/supabase';
 
 // ── Supabase backend ─────────────────────────────────────────────────────────
 
-function getSupabaseClient(): SupabaseClient {
-  const url = process.env['SUPABASE_URL'];
-  const key = process.env['SUPABASE_SERVICE_ROLE_KEY'];
-  if (!url || !key) {
-    throw new AppError(
-      'STORAGE_NOT_CONFIGURED',
-      'SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for file uploads',
-      500,
-    );
-  }
-  return createClient(url, key);
-}
-
-// Module-level singleton — created once on first upload call
-let _client: SupabaseClient | null = null;
-function client(): SupabaseClient {
-  if (!_client) _client = getSupabaseClient();
-  return _client;
-}
+const client = supabaseAdmin;
 
 // ── S3 / MinIO backend (set STORAGE_BACKEND=s3 to use) ──────────────────────
 

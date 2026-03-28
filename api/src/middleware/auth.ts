@@ -4,7 +4,6 @@ import { AppError } from './errorHandler';
 
 interface JwtPayload {
   userId: string;
-  username: string;
 }
 
 declare global {
@@ -16,16 +15,24 @@ declare global {
   }
 }
 
+function getSecret(): string {
+  const secret = process.env['SUPABASE_JWT_SECRET'];
+  if (!secret) throw new AppError('SERVER_ERROR', 'SUPABASE_JWT_SECRET not configured', 500);
+  return secret;
+}
+
+function extractPayload(token: string): JwtPayload {
+  const decoded = jwt.verify(token, getSecret()) as { sub?: string };
+  if (!decoded.sub) throw new Error('Missing sub claim');
+  return { userId: decoded.sub };
+}
+
 /** Attaches req.user if a valid Bearer token is present; never rejects the request. */
 export const optionalAuth: RequestHandler = (req, _res, next) => {
   const header = req.headers['authorization'];
   if (!header?.startsWith('Bearer ')) return next();
-  const token = header.slice(7);
-  const secret = process.env['JWT_SECRET'];
-  if (!secret) return next();
   try {
-    const payload = jwt.verify(token, secret) as JwtPayload;
-    req.user = payload;
+    req.user = extractPayload(header.slice(7));
   } catch {
     // invalid/expired — continue unauthenticated
   }
@@ -37,14 +44,8 @@ export const requireAuth: RequestHandler = (req, _res, next) => {
   if (!header?.startsWith('Bearer ')) {
     return next(new AppError('UNAUTHORIZED', 'Missing or invalid authorization header', 401));
   }
-  const token = header.slice(7);
-  const secret = process.env['JWT_SECRET'];
-  if (!secret) {
-    return next(new AppError('SERVER_ERROR', 'JWT secret not configured', 500));
-  }
   try {
-    const payload = jwt.verify(token, secret) as JwtPayload;
-    req.user = payload;
+    req.user = extractPayload(header.slice(7));
     next();
   } catch {
     next(new AppError('UNAUTHORIZED', 'Token expired or invalid', 401));

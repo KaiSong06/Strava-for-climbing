@@ -4,10 +4,10 @@ import { colors } from '@/src/theme/colors';
 
 export interface AscentActivity {
   id: string;
-  problemName: string;
+  colour: string;
   grade: string;
+  gymName: string;
   imageUrl: string | null;
-  tags: string[];
   ascentType: 'flash' | 'send' | 'attempt';
   createdAt: string;
 }
@@ -16,6 +16,15 @@ interface Props {
   activity: AscentActivity;
   onPress?: () => void;
 }
+
+const BADGE_STYLES: Record<
+  AscentActivity['ascentType'],
+  { bg: string; color: string; label: string }
+> = {
+  flash:   { bg: 'rgba(168,200,255,0.1)', color: colors.primary,   label: 'FLASH ⚡' },
+  send:    { bg: 'rgba(255,182,145,0.1)', color: colors.tertiary,  label: 'SEND' },
+  attempt: { bg: 'rgba(255,180,171,0.1)', color: colors.error,     label: 'ATTEMPT' },
+};
 
 export function ActivityCard({ activity, onPress }: Props) {
   const imageScale = useRef(new Animated.Value(1)).current;
@@ -37,6 +46,8 @@ export function ActivityCard({ activity, onPress }: Props) {
       bounciness: 0,
     }).start();
   }
+
+  const badge = BADGE_STYLES[activity.ascentType];
 
   return (
     <Pressable
@@ -62,13 +73,12 @@ export function ActivityCard({ activity, onPress }: Props) {
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.problemName}>{activity.problemName}</Text>
-        <View style={styles.tagsRow}>
-          {activity.tags.map((tag) => (
-            <View key={tag} style={styles.tag}>
-              <Text style={styles.tagText}>{tag.toUpperCase()}</Text>
-            </View>
-          ))}
+        <Text style={styles.problemName}>
+          {activity.colour} {activity.grade}
+        </Text>
+        <Text style={styles.gymName}>at {activity.gymName}</Text>
+        <View style={[styles.typeBadge, { backgroundColor: badge.bg }]}>
+          <Text style={[styles.typeBadgeText, { color: badge.color }]}>{badge.label}</Text>
         </View>
       </View>
     </Pressable>
@@ -80,7 +90,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceContainer,
     borderRadius: 16,
     overflow: 'hidden',
-    // Ghost border: outline at ~5% opacity (sits on identical bg — per design system rule)
     borderWidth: 1,
     borderColor: 'rgba(140, 145, 157, 0.05)',
   },
@@ -122,26 +131,26 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 24,
+    gap: 6,
   },
   problemName: {
     fontSize: 20,
     fontWeight: '900',
     color: colors.onSurface,
-    marginBottom: 8,
   },
-  tagsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+  gymName: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: colors.onSurfaceVariant,
   },
-  tag: {
-    backgroundColor: 'rgba(168, 200, 255, 0.1)',
+  typeBadge: {
+    alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
+    marginTop: 4,
   },
-  tagText: {
-    color: colors.primary,
+  typeBadgeText: {
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 1.0,

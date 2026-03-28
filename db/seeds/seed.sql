@@ -1,7 +1,7 @@
 -- ─── Dev seed: gyms, users, problems, ascents, follows ────────────────────
--- All passwords: 'password123'  (bcrypt cost 10 — dev only, never production)
 -- Run via:  cd api && npm run db:seed
 -- Safe to re-run: uses ON CONFLICT guards throughout.
+-- NOTE: Seed users have no auth.users entries — to test auth, register through the app.
 
 -- ─── Helper: pad a float array to 200-dim vector(200) ─────────────────────
 
@@ -28,46 +28,39 @@ ON CONFLICT (id) DO NOTHING;
 -- ON CONFLICT DO UPDATE so re-running the seed fixes placeholder hashes from
 -- older versions of this file.
 
-INSERT INTO users (id, username, display_name, email, email_verified, home_gym_id, password_hash) VALUES
+INSERT INTO users (id, username, display_name, phone, home_gym_id) VALUES
   (
     '22222222-0000-0000-0000-000000000001',
     'alex_climbs', 'Alex Chen',
-    'alex@crux.app', true,
-    '11111111-0000-0000-0000-000000000001',
-    crypt('password123', gen_salt('bf', 10))
+    '+15551000001',
+    '11111111-0000-0000-0000-000000000001'
   ),
   (
     '22222222-0000-0000-0000-000000000002',
     'sam_sends', 'Sam Torres',
-    'sam@crux.app', true,
-    '11111111-0000-0000-0000-000000000002',
-    crypt('password123', gen_salt('bf', 10))
+    '+15551000002',
+    '11111111-0000-0000-0000-000000000002'
   ),
   (
     '22222222-0000-0000-0000-000000000003',
     'jordan_flash', 'Jordan Kim',
-    'jordan@crux.app', true,
-    '11111111-0000-0000-0000-000000000001',
-    crypt('password123', gen_salt('bf', 10))
+    '+15551000003',
+    '11111111-0000-0000-0000-000000000001'
   ),
   (
     '22222222-0000-0000-0000-000000000004',
     'maya_boulders', 'Maya Patel',
-    'maya@crux.app', true,
-    '11111111-0000-0000-0000-000000000003',
-    crypt('password123', gen_salt('bf', 10))
+    '+15551000004',
+    '11111111-0000-0000-0000-000000000003'
   ),
   (
     '22222222-0000-0000-0000-000000000005',
     'kai_dyno', 'Kai Rivera',
-    'kai@crux.app', true,
-    '11111111-0000-0000-0000-000000000001',
-    crypt('password123', gen_salt('bf', 10))
+    '+15551000005',
+    '11111111-0000-0000-0000-000000000001'
   )
 ON CONFLICT (id) DO UPDATE SET
-  email          = EXCLUDED.email,
-  email_verified = EXCLUDED.email_verified,
-  password_hash  = EXCLUDED.password_hash;
+  phone = EXCLUDED.phone;
 
 -- ─── Problems ──────────────────────────────────────────────────────────────
 -- hold_vector: (x,y) pairs sorted by y DESC (top hold first), zero-padded to 200 dims.

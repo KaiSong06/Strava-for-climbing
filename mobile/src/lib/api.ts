@@ -1,9 +1,10 @@
 /**
  * Base API client for the Crux backend.
- * Automatically attaches the Bearer token from authStore and handles
- * 401 responses by attempting a token refresh before retrying once.
+ * Automatically attaches the Supabase access token and handles
+ * 401 responses by refreshing the session once before retrying.
  */
 import { useAuthStore } from '../stores/authStore';
+import { supabase } from './supabase';
 
 const BASE_URL = process.env['EXPO_PUBLIC_API_URL'] ?? 'http://localhost:3001';
 
@@ -24,34 +25,6 @@ interface RequestOptions extends Omit<RequestInit, 'body'> {
   _retry?: boolean;
 }
 
-// Module-level guard: ensures only one refresh attempt is in-flight at a time.
-// All concurrent 401s await the same Promise, then retry with the new token.
-let refreshPromise: Promise<string> | null = null;
-
-async function doRefresh(): Promise<string> {
-  const { refreshToken, updateAccessToken, logout } = useAuthStore.getState();
-
-  if (!refreshToken) {
-    logout();
-    throw new ApiError('UNAUTHORIZED', 'No refresh token available', 401);
-  }
-
-  const res = await fetch(`${BASE_URL}/auth/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken }),
-  });
-
-  if (!res.ok) {
-    logout();
-    throw new ApiError('UNAUTHORIZED', 'Session expired — please log in again', 401);
-  }
-
-  const { accessToken } = (await res.json()) as { accessToken: string };
-  updateAccessToken(accessToken);
-  return accessToken;
-}
-
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { body, _retry, ...init } = options;
   const { accessToken } = useAuthStore.getState();
@@ -68,17 +41,18 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  if (response.status === 401 && !_retry && !path.startsWith('/auth/')) {
-    // Deduplicate concurrent refresh attempts
-    refreshPromise ??= doRefresh().finally(() => {
-      refreshPromise = null;
-    });
+  if (response.status === 401 && !_retry) {
+    // Attempt one session refresh via Supabase
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error || !data.session) {
+      await useAuthStore.getState().logout();
+      throw new ApiError('UNAUTHORIZED', 'Session expired — please log in again', 401);
+    }
 
-    const newToken = await refreshPromise;
     return request<T>(path, {
       ...options,
       _retry: true,
-      headers: { ...headers, Authorization: `Bearer ${newToken}` },
+      headers: { ...headers, Authorization: `Bearer ${data.session.access_token}` },
     });
   }
 

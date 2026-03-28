@@ -2,7 +2,6 @@ import { RequestHandler, Router } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
-import { requireVerified } from '../middleware/requireVerified';
 import { uploadLimiter } from '../middleware/rateLimiter';
 import { AppError } from '../middleware/errorHandler';
 import { pool } from '../db/pool';
@@ -57,11 +56,11 @@ const confirmBodySchema = z.object({
 
 // ─── POST /uploads ─────────────────────────────────────────────────────────────
 
-uploadsRouter.post('/', requireAuth, requireVerified, uploadLimiter, parsePhotos, async (req, res, next) => {
+uploadsRouter.post('/', requireAuth, uploadLimiter, parsePhotos, async (req, res, next) => {
   try {
     const files = Array.isArray(req.files) ? req.files : [];
-    if (files.length < 2) {
-      throw new AppError('VALIDATION_ERROR', 'At least 2 photos are required', 400);
+    if (files.length < 1) {
+      throw new AppError('VALIDATION_ERROR', 'At least 1 photo is required', 400);
     }
 
     const bodySchema = z.object({
@@ -125,7 +124,7 @@ uploadsRouter.post('/:uploadId/confirm', requireAuth, async (req, res, next) => 
     if (row.user_id !== req.user!.userId) {
       throw new AppError('FORBIDDEN', 'Access denied', 403);
     }
-    if (row.processing_status !== 'awaiting_confirmation') {
+    if (row.processing_status !== 'awaiting_confirmation' && row.processing_status !== 'matched') {
       throw new AppError('INVALID_STATE', 'Upload is not awaiting confirmation', 409);
     }
 

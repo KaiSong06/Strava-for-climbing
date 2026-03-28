@@ -10,28 +10,22 @@ import {
 } from 'react-native';
 import { Link } from 'expo-router';
 import { Text, View } from '@/components/Themed';
-import { api, ApiError } from '@/src/lib/api';
+import { supabase } from '@/src/lib/supabase';
 import { useAuthStore } from '@/src/stores/authStore';
-import type { AuthUser } from '../../../shared/types';
 
-interface RegisterResponse {
-  user: AuthUser;
-  accessToken: string;
-  refreshToken: string;
-}
+type Step = 'form' | 'otp';
 
-// Client-side validation matching server rules
-function validate(fields: {
+function validateForm(fields: {
+  phone: string;
   username: string;
-  email: string;
   password: string;
   confirmPassword: string;
 }): string | null {
+  if (!/^\d{10}$/.test(fields.phone)) {
+    return 'Enter a valid 10-digit phone number.';
+  }
   if (!/^[a-zA-Z0-9_]{3,20}$/.test(fields.username)) {
     return 'Username must be 3–20 characters: letters, numbers, underscores only.';
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) {
-    return 'Enter a valid email address.';
   }
   if (fields.password.length < 8) {
     return 'Password must be at least 8 characters.';
@@ -43,35 +37,128 @@ function validate(fields: {
 }
 
 export default function RegisterScreen() {
-  const setAuth = useAuthStore((s) => s.setAuth);
+  const setPendingVerification = useAuthStore((s) => s.setPendingVerification);
+  const [step, setStep] = useState<Step>('form');
+  const [phone, setPhone] = useState('');
   const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [otpCode, setOtpCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function handleRegister() {
+  const fullPhone = `+1${phone}`;
+
+  async function handleSignUp() {
     setError('');
-    const validationError = validate({ username, email, password, confirmPassword });
+    const validationError = validateForm({ phone, username, password, confirmPassword });
     if (validationError) {
       setError(validationError);
       return;
     }
     setLoading(true);
     try {
-      const result = await api.post<RegisterResponse>('/auth/register', {
-        username,
-        email,
+      const { error: signUpError } = await supabase.auth.signUp({
+        phone: fullPhone,
         password,
+        options: { data: { username, display_name: username } },
       });
-      setAuth(result.user, result.accessToken, result.refreshToken);
-      // Auth gate in _layout.tsx handles navigation
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Registration failed. Please try again.');
+      if (signUpError) {
+        setError(signUpError.message);
+        return;
+      }
+      setPendingVerification(fullPhone);
+      setStep('otp');
+    } catch {
+      setError('Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleVerifyOtp() {
+    setError('');
+    if (otpCode.length !== 6) {
+      setError('Enter the 6-digit code from your SMS.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        phone: fullPhone,
+        token: otpCode,
+        type: 'sms',
+      });
+      if (verifyError) {
+        setError(verifyError.message);
+        return;
+      }
+      // onAuthStateChange fires SIGNED_IN → auth store updates → AuthGate navigates
+    } catch {
+      setError('Verification failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResendCode() {
+    setError('');
+    setLoading(true);
+    try {
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'sms',
+        phone: fullPhone,
+      });
+      if (resendError) {
+        setError(resendError.message);
+      }
+    } catch {
+      setError('Could not resend code.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (step === 'otp') {
+    return (
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <View style={styles.container}>
+          <Text style={styles.title}>Verify your phone</Text>
+          <Text style={styles.subtitle}>
+            We sent a 6-digit code to {fullPhone}
+          </Text>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <TextInput
+            style={styles.input}
+            placeholder="6-digit code"
+            keyboardType="number-pad"
+            maxLength={6}
+            value={otpCode}
+            onChangeText={setOtpCode}
+            onSubmitEditing={handleVerifyOtp}
+          />
+
+          <Pressable
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleVerifyOtp}
+            disabled={loading}>
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Verify</Text>
+            )}
+          </Pressable>
+
+          <Pressable onPress={handleResendCode} disabled={loading}>
+            <Text style={styles.linkText}>Resend code</Text>
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+    );
   }
 
   return (
@@ -85,21 +172,20 @@ export default function RegisterScreen() {
 
         <TextInput
           style={styles.input}
+          placeholder="Phone number (10 digits)"
+          keyboardType="phone-pad"
+          maxLength={10}
+          value={phone}
+          onChangeText={setPhone}
+        />
+        <TextInput
+          style={styles.input}
           placeholder="Username"
           autoCapitalize="none"
           autoCorrect={false}
           textContentType="username"
           value={username}
           onChangeText={setUsername}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          textContentType="emailAddress"
-          value={email}
-          onChangeText={setEmail}
         />
         <TextInput
           style={styles.input}
@@ -116,12 +202,12 @@ export default function RegisterScreen() {
           textContentType="newPassword"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
-          onSubmitEditing={handleRegister}
+          onSubmitEditing={handleSignUp}
         />
 
         <Pressable
           style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleRegister}
+          onPress={handleSignUp}
           disabled={loading}>
           {loading ? (
             <ActivityIndicator color="#fff" />
@@ -142,6 +228,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: { flexGrow: 1, justifyContent: 'center', padding: 24, gap: 12 },
   title: { fontSize: 26, fontWeight: '700', marginBottom: 8, textAlign: 'center' },
+  subtitle: { fontSize: 15, color: '#6b7280', textAlign: 'center', marginBottom: 4 },
   error: { color: '#dc2626', textAlign: 'center', marginBottom: 4 },
   input: {
     borderWidth: 1,

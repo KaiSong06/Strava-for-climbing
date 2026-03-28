@@ -6,35 +6,30 @@ import { useRouter } from 'expo-router';
 import { api } from '@/src/lib/api';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useFollowStore } from '@/src/stores/followStore';
-import type { AuthUser } from '../../../../shared/types';
+import type { AuthUser, FeedItem, PaginatedResponse } from '../../../../shared/types';
 import { colors } from '@/src/theme/colors';
 import { ProfileHeader } from './components/ProfileHeader';
 import { ActionButtons } from './components/ActionButtons';
 import { RecentActivity } from './components/RecentActivity';
 import type { AscentActivity } from './components/ActivityCard';
 
-// ── Mock data (replace with API call once ascents endpoint is wired) ────────
+// ── Helpers ─────────────────────────────────────────────────────────────────
 
-const MOCK_ACTIVITIES: AscentActivity[] = [
-  {
-    id: '1',
-    problemName: 'Midnight Dyno Project',
-    grade: 'V5',
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function feedItemToActivity(item: FeedItem): AscentActivity {
+  return {
+    id: item.id,
+    colour: capitalize(item.problem.colour),
+    grade: item.problem.consensus_grade ?? item.user_grade ?? 'Ungraded',
+    gymName: item.problem.gym.name,
     imageUrl: null,
-    tags: ['Crimps', 'Overhang', 'Dyno'],
-    ascentType: 'flash',
-    createdAt: '2026-03-20T10:00:00Z',
-  },
-  {
-    id: '2',
-    problemName: 'Morning Slab Flow',
-    grade: 'V3',
-    imageUrl: null,
-    tags: ['Technical', 'Balance', 'Footwork'],
-    ascentType: 'send',
-    createdAt: '2026-03-18T09:00:00Z',
-  },
-];
+    ascentType: item.type,
+    createdAt: item.logged_at,
+  };
+}
 
 // ── Screen ──────────────────────────────────────────────────────────────────
 
@@ -47,6 +42,15 @@ export default function AccountScreen() {
   const { data: profile, isLoading, error } = useQuery<AuthUser>({
     queryKey: ['users', 'me'],
     queryFn: () => api.get<AuthUser>('/users/me'),
+  });
+
+  const { data: ascentsPage } = useQuery<PaginatedResponse<FeedItem>>({
+    queryKey: ['users', profile?.username, 'ascents'],
+    queryFn: () =>
+      api.get<PaginatedResponse<FeedItem>>(
+        `/users/${profile!.username}/ascents?limit=5`,
+      ),
+    enabled: !!profile?.username,
   });
 
   useEffect(() => {
@@ -130,7 +134,7 @@ export default function AccountScreen() {
       <ActionButtons onEditProfile={handleEditProfile} onSignOut={handleSignOut} />
 
       <RecentActivity
-        activities={MOCK_ACTIVITIES}
+        activities={(ascentsPage?.data ?? []).map(feedItemToActivity)}
         onViewAll={handleViewAll}
         onActivityPress={handleActivityPress}
       />

@@ -1,8 +1,25 @@
-// TODO Phase 4b: handle ≥0.92 auto-match / 0.75–0.91 confirm / <0.75 new problem
-export function useMatchResult() {
-  return {
-    matchedProblem: null as null,
-    confidence: null as null,
-    needsConfirmation: false,
-  };
+import { useMemo } from 'react';
+import type { UploadStatusResponse } from '../services/uploadService';
+
+export function useMatchResult(result: UploadStatusResponse | null) {
+  return useMemo(() => {
+    if (!result) {
+      return {
+        matchedProblemId: null as string | null,
+        confidence: null as number | null,
+        needsConfirmation: false,
+        isAutoMatched: false,
+      };
+    }
+
+    return {
+      matchedProblemId: result.matchedProblemId,
+      confidence:
+        result.similarityScore !== null
+          ? Math.round(result.similarityScore * 100)
+          : null,
+      needsConfirmation: result.status === 'awaiting_confirmation',
+      isAutoMatched: result.status === 'matched',
+    };
+  }, [result]);
 }
