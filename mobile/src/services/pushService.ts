@@ -2,7 +2,23 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { api } from '../lib/api';
+import { useAuthStore } from '../stores/authStore';
+
+const BASE_URL = process.env['EXPO_PUBLIC_API_URL'] ?? 'http://localhost:3001';
+
+/** Fire-and-forget fetch that never triggers the api client's logout-on-401 chain. */
+async function pushFetch(path: string, method: 'POST' | 'DELETE', body?: unknown): Promise<void> {
+  const { accessToken } = useAuthStore.getState();
+  if (!accessToken) return;
+  await fetch(`${BASE_URL}${path}`, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+}
 
 export function setupNotificationHandler(): void {
   Notifications.setNotificationHandler({
@@ -49,7 +65,7 @@ export async function registerForPushNotifications(): Promise<void> {
 
   try {
     const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
-    await api.post('/push-tokens', { token });
+    await pushFetch('/push-tokens', 'POST', { token });
   } catch (err) {
     console.error('[push] failed to register token:', err);
   }
@@ -61,7 +77,7 @@ export async function unregisterPushNotifications(): Promise<void> {
 
   try {
     const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
-    await api.delete(`/push-tokens?token=${encodeURIComponent(token)}`);
+    await pushFetch(`/push-tokens?token=${encodeURIComponent(token)}`, 'DELETE');
   } catch {
     // Best-effort cleanup on logout
   }

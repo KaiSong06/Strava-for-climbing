@@ -1,56 +1,69 @@
-import { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '@/src/theme/colors';
 import { typography } from '@/src/theme/typography';
 import { spacing } from '@/src/theme/spacing';
+import { formatRelativeTime } from '@/src/lib/formatRelativeTime';
 
 export interface AscentPostData {
   id: string;
-  type: 'ascent';
-  user: { name: string; avatar: string };
-  gym: string;
-  timeAgo: string;
-  image: string;
-  grade: string;
-  ascentType: 'flash' | 'send' | 'attempt';
-  likes: number;
-  comments: number;
-  liked: boolean;
-  caption: string;
+  type: 'flash' | 'send' | 'attempt';
+  user_grade: string | null;
+  rating: number | null;
+  logged_at: string;
+  notes: string | null;
+  display_name: string;
+  photo_urls: string[];
+  avatar_url: string | null;
 }
 
-function badgeLabel(grade: string, ascentType: string): string {
-  switch (ascentType) {
+function badgeLabel(userGrade: string | null, type: AscentPostData['type']): string {
+  const grade = userGrade ?? '';
+  switch (type) {
     case 'flash':
-      return `${grade} FLASH ⚡`;
+      return grade ? `${grade} FLASH ⚡` : 'FLASH ⚡';
     case 'attempt':
-      return `${grade} ATTEMPT`;
+      return grade ? `${grade} ATTEMPT` : 'ATTEMPT';
     default:
-      return `NEW ${grade} SEND`;
+      return grade ? `NEW ${grade} SEND` : 'NEW SEND';
   }
+}
+
+function StarRating({ rating }: { rating: number }) {
+  return (
+    <View style={styles.ratingRow}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <MaterialCommunityIcons
+          key={i}
+          name={i <= rating ? 'star' : 'star-outline'}
+          size={16}
+          color={i <= rating ? colors.primary : colors.onSurfaceVariant}
+        />
+      ))}
+    </View>
+  );
 }
 
 export function AscentPostCard({ item }: { item: AscentPostData }) {
-  const [liked, setLiked] = useState(item.liked);
-  const [likeCount, setLikeCount] = useState(item.likes);
-
-  function handleLike() {
-    setLiked((prev) => !prev);
-    setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
-  }
+  const photo = item.photo_urls[0];
 
   return (
     <View style={styles.card}>
       {/* ── Header ─────────────────────────────────── */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
+          {item.avatar_url ? (
+            <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, styles.avatarFallback]}>
+              <Text style={styles.avatarInitial}>
+                {item.display_name[0]?.toUpperCase() ?? '?'}
+              </Text>
+            </View>
+          )}
           <View>
-            <Text style={styles.userName}>{item.user.name}</Text>
-            <Text style={styles.meta}>
-              {item.timeAgo} • {item.gym}
-            </Text>
+            <Text style={styles.userName}>{item.display_name}</Text>
+            <Text style={styles.meta}>{formatRelativeTime(item.logged_at)}</Text>
           </View>
         </View>
         <Pressable
@@ -63,36 +76,35 @@ export function AscentPostCard({ item }: { item: AscentPostData }) {
       </View>
 
       {/* ── Image + Badge ──────────────────────────── */}
-      <View style={styles.imageContainer}>
-        <Image source={{ uri: item.image }} style={styles.postImage} />
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{badgeLabel(item.grade, item.ascentType)}</Text>
+      {photo && (
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: photo }} style={styles.postImage} />
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{badgeLabel(item.user_grade, item.type)}</Text>
+          </View>
         </View>
-      </View>
+      )}
 
-      {/* ── Interactions + Caption ──────────────────── */}
+      {/* ── Body ──────────────────────────────────── */}
       <View style={styles.body}>
+        {/* Rating */}
+        {item.rating !== null && <StarRating rating={item.rating} />}
+
         {/* Interaction bar */}
         <View style={styles.interactionBar}>
           <View style={styles.interactionLeft}>
             <Pressable
-              onPress={handleLike}
-              style={({ pressed }) => [styles.interactionBtn, pressed && styles.pressed]}
+              onPress={() => console.log('Like pressed')}
+              style={({ pressed }) => pressed && styles.pressed}
             >
-              <MaterialCommunityIcons
-                name={liked ? 'heart' : 'heart-outline'}
-                size={24}
-                color={liked ? colors.primary : colors.onSurfaceVariant}
-              />
-              <Text style={styles.interactionCount}>{likeCount}</Text>
+              <MaterialCommunityIcons name="heart-outline" size={24} color={colors.onSurfaceVariant} />
             </Pressable>
 
             <Pressable
               onPress={() => console.log('Comments pressed')}
-              style={({ pressed }) => [styles.interactionBtn, pressed && styles.pressed]}
+              style={({ pressed }) => pressed && styles.pressed}
             >
               <MaterialCommunityIcons name="chat-outline" size={24} color={colors.onSurfaceVariant} />
-              <Text style={styles.interactionCount}>{item.comments}</Text>
             </Pressable>
 
             <Pressable
@@ -111,12 +123,14 @@ export function AscentPostCard({ item }: { item: AscentPostData }) {
           </Pressable>
         </View>
 
-        {/* Caption */}
-        <Text style={styles.caption}>
-          <Text style={styles.captionName}>{item.user.name}</Text>
-          {'  '}
-          {item.caption}
-        </Text>
+        {/* Notes */}
+        {item.notes && (
+          <Text style={styles.caption}>
+            <Text style={styles.captionName}>{item.display_name}</Text>
+            {'  '}
+            {item.notes}
+          </Text>
+        )}
 
         {/* View all comments */}
         <Pressable onPress={() => console.log('View comments pressed')}>
@@ -152,6 +166,15 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: colors.surfaceContainerHigh,
+  },
+  avatarFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitial: {
+    ...typography.bodyMd,
+    fontFamily: 'Inter_700Bold',
+    color: colors.onSurface,
   },
   userName: {
     ...typography.bodyMd,
@@ -197,6 +220,10 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     gap: spacing.lg,
   },
+  ratingRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
   interactionBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -206,16 +233,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xl,
-  },
-  interactionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  interactionCount: {
-    ...typography.bodyMd,
-    fontFamily: 'Inter_700Bold',
-    color: colors.onSurface,
   },
 
   caption: {

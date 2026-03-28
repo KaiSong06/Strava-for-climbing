@@ -129,6 +129,8 @@ export interface FeedItem {
   };
   user_grade: string | null;
   rating: number | null;
+  notes: string | null;
+  photo_urls: string[];
 }
 
 // ─── API response helpers ─────────────────────────────────────────────────────

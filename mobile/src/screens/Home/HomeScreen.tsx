@@ -1,88 +1,67 @@
-import { FlatList, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/src/lib/api';
+import { useAuthStore } from '@/src/stores/authStore';
+import type { FeedItem, PaginatedResponse } from '../../../../shared/types';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
+import { typography } from '@/src/theme/typography';
 import { HomeHeader, HEADER_CONTENT_HEIGHT } from './components/HomeHeader';
 import { AscentPostCard } from './components/AscentPostCard';
-import { GymUpdateCard } from './components/GymUpdateCard';
 import type { AscentPostData } from './components/AscentPostCard';
-import type { GymUpdateData } from './components/GymUpdateCard';
 
-// ── Mock data ──────────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-type FeedEntry = AscentPostData | GymUpdateData;
-
-const MOCK_FEED: FeedEntry[] = [
-  {
-    id: '1',
-    type: 'ascent',
-    user: {
-      name: 'Marcus Thorne',
-      avatar: 'https://picsum.photos/seed/marcus/200',
-    },
-    gym: 'Castle Climbing Centre',
-    timeAgo: '2 Hours Ago',
-    image: 'https://picsum.photos/seed/climb1/800/1000',
-    grade: 'V6',
-    ascentType: 'send',
-    likes: 128,
-    comments: 14,
-    liked: true,
-    caption:
-      'Finally cracked this dynamic start! The slab finish is spicy but the middle section is pure flow. Big thanks to @Sarah_C for the beta.',
-  },
-  {
-    id: '2',
-    type: 'gym_update',
-    gym: { name: 'The Arch', verified: true },
-    title: 'ROUTSETTING WEEK',
-    body: "We've just reset the North Wall. 24 new problems ranging from V1 to V8 are waiting for your first ascent tags.",
-    image: 'https://picsum.photos/seed/gym1/800/600',
-    cta: { label: 'Book Session', action: 'book' },
-  },
-  {
-    id: '3',
-    type: 'ascent',
-    user: {
-      name: 'Sarah Chen',
-      avatar: 'https://picsum.photos/seed/sarah/200',
-    },
-    gym: 'The Arch Climbing Wall',
-    timeAgo: '5 Hours Ago',
-    image: 'https://picsum.photos/seed/climb2/800/1000',
-    grade: 'V4',
-    ascentType: 'flash',
-    likes: 54,
-    comments: 7,
-    liked: false,
-    caption:
-      'Flash! This new turquoise set on the slab wall is so much fun. Perfect warm-up problem.',
-  },
-];
+function feedItemToCard(item: FeedItem): AscentPostData {
+  return {
+    id: item.id,
+    type: item.type,
+    user_grade: item.user_grade,
+    rating: item.rating,
+    logged_at: item.logged_at,
+    notes: item.notes,
+    display_name: item.user.display_name,
+    photo_urls: item.photo_urls,
+    avatar_url: item.user.avatar_url,
+  };
+}
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-
   const topPadding = insets.top + HEADER_CONTENT_HEIGHT + spacing.lg;
+  const accessToken = useAuthStore((s) => s.accessToken);
 
-  function renderItem({ item }: { item: FeedEntry }) {
-    if (item.type === 'gym_update') {
-      return <GymUpdateCard item={item} />;
-    }
-    return <AscentPostCard item={item} />;
-  }
+  const { data, isLoading, error } = useQuery<PaginatedResponse<FeedItem>>({
+    queryKey: ['feed'],
+    queryFn: () => api.get<PaginatedResponse<FeedItem>>('/feed'),
+    enabled: !!accessToken,
+  });
+
+  const cards = data?.data.map(feedItemToCard) ?? [];
 
   return (
     <View style={styles.screen}>
       <FlatList
-        data={MOCK_FEED}
+        data={cards}
         keyExtractor={(item) => item.id}
-        renderItem={renderItem}
+        renderItem={({ item }) => <AscentPostCard item={item} />}
         contentContainerStyle={[styles.listContent, { paddingTop: topPadding }]}
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={Separator}
+        ListEmptyComponent={
+          isLoading ? (
+            <ActivityIndicator color={colors.primary} style={styles.loader} />
+          ) : error ? (
+            <Text style={styles.emptyText}>Could not load feed.</Text>
+          ) : (
+            <Text style={styles.emptyText}>
+              Follow climbers to see their ascents here.
+            </Text>
+          )
+        }
       />
       <HomeHeader onNotificationsPress={() => console.log('Notifications')} />
     </View>
@@ -104,5 +83,14 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: spacing.xl + spacing.lg,
+  },
+  loader: {
+    marginTop: spacing.xxxl,
+  },
+  emptyText: {
+    ...typography.bodyMd,
+    color: colors.onSurfaceVariant,
+    textAlign: 'center',
+    marginTop: spacing.xxxl,
   },
 });

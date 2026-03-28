@@ -6,12 +6,18 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Text,
   TextInput,
+  View,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Link } from 'expo-router';
-import { Text, View } from '@/components/Themed';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '@/src/lib/supabase';
 import { useAuthStore } from '@/src/stores/authStore';
+import { colors } from '@/src/theme/colors';
+import { spacing } from '@/src/theme/spacing';
+import { typography } from '@/src/theme/typography';
 
 type Step = 'form' | 'otp';
 
@@ -46,6 +52,7 @@ export default function RegisterScreen() {
   const [otpCode, setOtpCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const fullPhone = `+1${phone}`;
 
@@ -121,133 +128,151 @@ export default function RegisterScreen() {
 
   if (step === 'otp') {
     return (
+      <View style={styles.screen}>
+        <StatusBar style="light" />
+        <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
+          <Text style={styles.wordmark}>Crux</Text>
+        </View>
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <View style={styles.container}>
+            <Text style={styles.title}>Verify your phone</Text>
+            <Text style={styles.subtitle}>
+              We sent a 6-digit code to {fullPhone}
+            </Text>
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            <TextInput
+              style={styles.input}
+              placeholder="6-digit code"
+              placeholderTextColor={colors.outline}
+              keyboardType="number-pad"
+              maxLength={6}
+              value={otpCode}
+              onChangeText={setOtpCode}
+              onSubmitEditing={handleVerifyOtp}
+            />
+
+            <Pressable
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleVerifyOtp}
+              disabled={loading}>
+              {loading ? (
+                <ActivityIndicator color={colors.onPrimary} />
+              ) : (
+                <Text style={styles.buttonText}>Verify</Text>
+              )}
+            </Pressable>
+
+            <Pressable onPress={handleResendCode} disabled={loading}>
+              <Text style={styles.linkText}>Resend code</Text>
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.screen}>
+      <StatusBar style="light" />
+      <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
+        <Text style={styles.wordmark}>Crux</Text>
+      </View>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <View style={styles.container}>
-          <Text style={styles.title}>Verify your phone</Text>
-          <Text style={styles.subtitle}>
-            We sent a 6-digit code to {fullPhone}
-          </Text>
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+          <Text style={styles.title}>Create your account</Text>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <TextInput
             style={styles.input}
-            placeholder="6-digit code"
-            keyboardType="number-pad"
-            maxLength={6}
-            value={otpCode}
-            onChangeText={setOtpCode}
-            onSubmitEditing={handleVerifyOtp}
+            placeholder="Phone number (10 digits)"
+            placeholderTextColor={colors.outline}
+            keyboardType="phone-pad"
+            maxLength={10}
+            value={phone}
+            onChangeText={setPhone}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Username"
+            placeholderTextColor={colors.outline}
+            autoCapitalize="none"
+            autoCorrect={false}
+            textContentType="username"
+            value={username}
+            onChangeText={setUsername}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Password (min 8 characters)"
+            placeholderTextColor={colors.outline}
+            secureTextEntry
+            textContentType="newPassword"
+            value={password}
+            onChangeText={setPassword}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Confirm password"
+            placeholderTextColor={colors.outline}
+            secureTextEntry
+            textContentType="newPassword"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            onSubmitEditing={handleSignUp}
           />
 
           <Pressable
             style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleVerifyOtp}
+            onPress={handleSignUp}
             disabled={loading}>
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.onPrimary} />
             ) : (
-              <Text style={styles.buttonText}>Verify</Text>
+              <Text style={styles.buttonText}>Create account</Text>
             )}
           </Pressable>
 
-          <Pressable onPress={handleResendCode} disabled={loading}>
-            <Text style={styles.linkText}>Resend code</Text>
-          </Pressable>
-        </View>
+          <Link href="/(auth)/login" style={styles.link}>
+            <Text style={styles.linkText}>Already have an account? Sign in</Text>
+          </Link>
+        </ScrollView>
       </KeyboardAvoidingView>
-    );
-  }
-
-  return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Create your account</Text>
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <TextInput
-          style={styles.input}
-          placeholder="Phone number (10 digits)"
-          keyboardType="phone-pad"
-          maxLength={10}
-          value={phone}
-          onChangeText={setPhone}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Username"
-          autoCapitalize="none"
-          autoCorrect={false}
-          textContentType="username"
-          value={username}
-          onChangeText={setUsername}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password (min 8 characters)"
-          secureTextEntry
-          textContentType="newPassword"
-          value={password}
-          onChangeText={setPassword}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Confirm password"
-          secureTextEntry
-          textContentType="newPassword"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          onSubmitEditing={handleSignUp}
-        />
-
-        <Pressable
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleSignUp}
-          disabled={loading}>
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Create account</Text>
-          )}
-        </Pressable>
-
-        <Link href="/(auth)/login" style={styles.link}>
-          <Text style={styles.linkText}>Already have an account? Sign in</Text>
-        </Link>
-      </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.background },
+  header: { paddingHorizontal: spacing.xl, paddingBottom: spacing.md },
+  wordmark: { ...typography.headlineMd, color: colors.primary },
   flex: { flex: 1 },
-  container: { flexGrow: 1, justifyContent: 'center', padding: 24, gap: 12 },
-  title: { fontSize: 26, fontWeight: '700', marginBottom: 8, textAlign: 'center' },
-  subtitle: { fontSize: 15, color: '#6b7280', textAlign: 'center', marginBottom: 4 },
-  error: { color: '#dc2626', textAlign: 'center', marginBottom: 4 },
+  container: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl, gap: spacing.md },
+  title: { ...typography.headlineMd, color: colors.onSurface, marginBottom: spacing.sm, textAlign: 'center' },
+  subtitle: { ...typography.bodyMd, color: colors.onSurfaceVariant, textAlign: 'center', marginBottom: spacing.xs },
+  error: { ...typography.bodyMd, color: colors.error, textAlign: 'center', marginBottom: spacing.xs },
   input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#fff',
-    color: '#111',
+    ...typography.bodyLg,
+    borderRadius: 12,
+    padding: spacing.md,
+    backgroundColor: colors.surfaceContainerHighest,
+    color: colors.onSurface,
   },
   button: {
-    backgroundColor: '#2563eb',
-    borderRadius: 8,
-    padding: 14,
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    padding: spacing.lg,
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
-  link: { marginTop: 12, alignSelf: 'center' },
-  linkText: { color: '#2563eb', fontSize: 14 },
+  buttonText: { ...typography.bodyLg, color: colors.onPrimary, fontWeight: '700' },
+  link: { marginTop: spacing.md, alignSelf: 'center' },
+  linkText: { ...typography.bodyMd, color: colors.primary },
 });

@@ -13,6 +13,8 @@ export interface FeedItem {
   };
   user_grade: string | null;
   rating: number | null;
+  notes: string | null;
+  photo_urls: string[];
 }
 
 type FeedRow = {
@@ -21,6 +23,8 @@ type FeedRow = {
   type: string;
   user_grade: string | null;
   rating: number | null;
+  notes: string | null;
+  photo_urls: string[] | null;
   user_id: string;
   username: string;
   display_name: string;
@@ -38,6 +42,11 @@ const FEED_COLS = `
   a.type,
   a.user_grade,
   a.rating,
+  a.notes,
+  (SELECT upl.photo_urls FROM uploads upl
+   WHERE upl.user_id = a.user_id AND upl.problem_id = a.problem_id
+   AND upl.processing_status IN ('matched', 'complete', 'awaiting_confirmation')
+   ORDER BY upl.created_at DESC LIMIT 1) AS photo_urls,
   u.id           AS user_id,
   u.username,
   u.display_name,
@@ -75,6 +84,8 @@ function toFeedItem(row: FeedRow): FeedItem {
     type: row.type as FeedItem['type'],
     user_grade: row.user_grade,
     rating: row.rating,
+    notes: row.notes,
+    photo_urls: row.photo_urls ?? [],
     user: {
       id: row.user_id,
       username: row.username,

@@ -5,17 +5,24 @@ import {
   Platform,
   Pressable,
   StyleSheet,
+  Text,
   TextInput,
+  View,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Link } from 'expo-router';
-import { Text, View } from '@/components/Themed';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '@/src/lib/supabase';
+import { colors } from '@/src/theme/colors';
+import { spacing } from '@/src/theme/spacing';
+import { typography } from '@/src/theme/typography';
 
 export default function LoginScreen() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const insets = useSafeAreaInsets();
 
   async function handleLogin() {
     setError('');
@@ -46,74 +53,83 @@ export default function LoginScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.container}>
-        <Text style={styles.title}>Sign in to Crux</Text>
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <TextInput
-          style={styles.input}
-          placeholder="Phone number (10 digits)"
-          keyboardType="phone-pad"
-          maxLength={10}
-          value={phone}
-          onChangeText={setPhone}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          secureTextEntry
-          textContentType="password"
-          value={password}
-          onChangeText={setPassword}
-          onSubmitEditing={handleLogin}
-        />
-
-        <Pressable
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={loading}>
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Sign in</Text>
-          )}
-        </Pressable>
-
-        <Link href="/(auth)/register" style={styles.link}>
-          <Text style={styles.linkText}>Don't have an account? Register</Text>
-        </Link>
+    <View style={styles.screen}>
+      <StatusBar style="light" />
+      <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
+        <Text style={styles.wordmark}>Crux</Text>
       </View>
-    </KeyboardAvoidingView>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <View style={styles.container}>
+          <Text style={styles.title}>Sign in to Crux</Text>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <TextInput
+            style={styles.input}
+            placeholder="Phone number (10 digits)"
+            placeholderTextColor={colors.outline}
+            keyboardType="phone-pad"
+            maxLength={10}
+            value={phone}
+            onChangeText={setPhone}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor={colors.outline}
+            secureTextEntry
+            textContentType="password"
+            value={password}
+            onChangeText={setPassword}
+            onSubmitEditing={handleLogin}
+          />
+
+          <Pressable
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleLogin}
+            disabled={loading}>
+            {loading ? (
+              <ActivityIndicator color={colors.onPrimary} />
+            ) : (
+              <Text style={styles.buttonText}>Sign in</Text>
+            )}
+          </Pressable>
+
+          <Link href="/(auth)/register" style={styles.link}>
+            <Text style={styles.linkText}>Don't have an account? Register</Text>
+          </Link>
+        </View>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.background },
+  header: { paddingHorizontal: spacing.xl, paddingBottom: spacing.md },
+  wordmark: { ...typography.headlineMd, color: colors.primary },
   flex: { flex: 1 },
-  container: { flex: 1, justifyContent: 'center', padding: 24, gap: 12 },
-  title: { fontSize: 26, fontWeight: '700', marginBottom: 8, textAlign: 'center' },
-  error: { color: '#dc2626', textAlign: 'center', marginBottom: 4 },
+  container: { flex: 1, justifyContent: 'center', padding: spacing.xl, gap: spacing.md },
+  title: { ...typography.headlineMd, color: colors.onSurface, marginBottom: spacing.sm, textAlign: 'center' },
+  error: { ...typography.bodyMd, color: colors.error, textAlign: 'center', marginBottom: spacing.xs },
   input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#fff',
-    color: '#111',
+    ...typography.bodyLg,
+    borderRadius: 12,
+    padding: spacing.md,
+    backgroundColor: colors.surfaceContainerHighest,
+    color: colors.onSurface,
   },
   button: {
-    backgroundColor: '#2563eb',
-    borderRadius: 8,
-    padding: 14,
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    padding: spacing.lg,
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
-  link: { marginTop: 12, alignSelf: 'center' },
-  linkText: { color: '#2563eb', fontSize: 14 },
+  buttonText: { ...typography.bodyLg, color: colors.onPrimary, fontWeight: '700' },
+  link: { marginTop: spacing.md, alignSelf: 'center' },
+  linkText: { ...typography.bodyMd, color: colors.primary },
 });

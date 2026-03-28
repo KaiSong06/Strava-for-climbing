@@ -39,9 +39,12 @@ export default function AccountScreen() {
   const { logout } = useAuthStore();
   const { load: loadFollowing, reset: resetFollowing } = useFollowStore();
 
+  const accessToken = useAuthStore((s) => s.accessToken);
+
   const { data: profile, isLoading, error } = useQuery<AuthUser>({
     queryKey: ['users', 'me'],
     queryFn: () => api.get<AuthUser>('/users/me'),
+    enabled: !!accessToken,
   });
 
   const { data: ascentsPage } = useQuery<PaginatedResponse<FeedItem>>({

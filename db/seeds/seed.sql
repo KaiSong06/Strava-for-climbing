@@ -19,9 +19,12 @@ $$ LANGUAGE plpgsql;
 -- ─── Gyms ──────────────────────────────────────────────────────────────────
 
 INSERT INTO gyms (id, name, city, lat, lng, default_retirement_days) VALUES
-  ('11111111-0000-0000-0000-000000000001', 'Movement SOMA',          'San Francisco', 37.7749, -122.4194, 14),
-  ('11111111-0000-0000-0000-000000000002', 'Dogpatch Boulders',      'San Francisco', 37.7600, -122.3877, 21),
-  ('11111111-0000-0000-0000-000000000003', 'Brooklyn Boulders DUMBO','Brooklyn',      40.7033,  -73.9893, 14)
+  ('11111111-0000-0000-0000-000000000001', 'Altitude Gym Kanata',   'Kanata',    45.2980, -75.9117, 14),
+  ('11111111-0000-0000-0000-000000000002', 'Altitude Gym Gatineau', 'Gatineau',  45.4467, -75.7369, 14),
+  ('11111111-0000-0000-0000-000000000003', 'Altitude Gym Orleans',  'Orleans',   45.4766, -75.5170, 14),
+  ('11111111-0000-0000-0000-000000000004', 'Coyote Rock Gym',       'Ottawa',    45.4060, -75.6270, 14),
+  ('11111111-0000-0000-0000-000000000005', 'Klimat Ottawa',         'Ottawa',    45.4015, -75.6972, 14),
+  ('11111111-0000-0000-0000-000000000006', 'Klimat Wakefield',      'Wakefield', 45.6410, -75.9280, 14)
 ON CONFLICT (id) DO NOTHING;
 
 -- ─── Users ─────────────────────────────────────────────────────────────────
@@ -33,13 +36,13 @@ INSERT INTO users (id, username, display_name, phone, home_gym_id) VALUES
     '22222222-0000-0000-0000-000000000001',
     'alex_climbs', 'Alex Chen',
     '+15551000001',
-    '11111111-0000-0000-0000-000000000001'
+    '11111111-0000-0000-0000-000000000004'
   ),
   (
     '22222222-0000-0000-0000-000000000002',
     'sam_sends', 'Sam Torres',
     '+15551000002',
-    '11111111-0000-0000-0000-000000000002'
+    '11111111-0000-0000-0000-000000000005'
   ),
   (
     '22222222-0000-0000-0000-000000000003',
@@ -51,7 +54,7 @@ INSERT INTO users (id, username, display_name, phone, home_gym_id) VALUES
     '22222222-0000-0000-0000-000000000004',
     'maya_boulders', 'Maya Patel',
     '+15551000004',
-    '11111111-0000-0000-0000-000000000003'
+    '11111111-0000-0000-0000-000000000006'
   ),
   (
     '22222222-0000-0000-0000-000000000005',
@@ -67,7 +70,7 @@ ON CONFLICT (id) DO UPDATE SET
 -- consensus_grade and total_sends are denormalised values; set to match the
 -- ascents inserted below.
 
--- Movement SOMA ─────────────────────────────────────────────────────────────
+-- Altitude Gym Kanata ───────────────────────────────────────────────────────
 
 INSERT INTO problems (id, gym_id, colour, hold_vector, status, consensus_grade, total_sends, first_upload_at) VALUES
 
@@ -103,7 +106,7 @@ INSERT INTO problems (id, gym_id, colour, hold_vector, status, consensus_grade, 
 
 ON CONFLICT (id) DO NOTHING;
 
--- Dogpatch Boulders ──────────────────────────────────────────────────────────
+-- Altitude Gym Gatineau ─────────────────────────────────────────────────────
 
 INSERT INTO problems (id, gym_id, colour, hold_vector, status, consensus_grade, total_sends, first_upload_at) VALUES
 
@@ -127,7 +130,7 @@ INSERT INTO problems (id, gym_id, colour, hold_vector, status, consensus_grade, 
 
 ON CONFLICT (id) DO NOTHING;
 
--- Brooklyn Boulders DUMBO ────────────────────────────────────────────────────
+-- Altitude Gym Orleans ──────────────────────────────────────────────────────
 
 INSERT INTO problems (id, gym_id, colour, hold_vector, status, consensus_grade, total_sends, first_upload_at) VALUES
 

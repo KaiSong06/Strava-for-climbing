@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '@/src/theme/colors';
@@ -6,55 +7,81 @@ import type { FriendEntry } from '../mockSearchData';
 
 interface FriendsRowProps {
   friends: FriendEntry[];
-  onViewAll?: () => void;
   onFriendPress?: (friend: FriendEntry) => void;
 }
 
-export function FriendsRow({ friends, onViewAll, onFriendPress }: FriendsRowProps) {
+function AvatarWithRing({ friend }: { friend: FriendEntry }) {
+  if (friend.hasNewActivity) {
+    return (
+      <LinearGradient
+        colors={[colors.primary, colors.primaryContainer]}
+        start={{ x: 0, y: 1 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.avatarRing}
+      >
+        <View style={styles.avatarInner}>
+          <Image source={{ uri: friend.avatarUrl }} style={styles.avatar} />
+        </View>
+      </LinearGradient>
+    );
+  }
+
+  return (
+    <View style={[styles.avatarRing, styles.avatarRingInactive]}>
+      <View style={styles.avatarInner}>
+        <Image source={{ uri: friend.avatarUrl }} style={styles.avatar} />
+      </View>
+    </View>
+  );
+}
+
+export function FriendsRow({ friends, onFriendPress }: FriendsRowProps) {
+  const [expanded, setExpanded] = useState(false);
+
   return (
     <View style={styles.section}>
       <View style={styles.header}>
         <Text style={styles.title}>Friends</Text>
-        <Pressable onPress={onViewAll} hitSlop={8}>
-          <Text style={styles.viewAll}>View all</Text>
+        <Pressable onPress={() => setExpanded((prev) => !prev)} hitSlop={8}>
+          <Text style={styles.viewAll}>{expanded ? 'Show less' : 'View all'}</Text>
         </Pressable>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {friends.map((friend) => (
-          <Pressable
-            key={friend.id}
-            style={styles.friendItem}
-            onPress={() => onFriendPress?.(friend)}
-          >
-            {friend.hasNewActivity ? (
-              <LinearGradient
-                colors={[colors.primary, colors.primaryContainer]}
-                start={{ x: 0, y: 1 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.avatarRing}
-              >
-                <View style={styles.avatarInner}>
-                  <Image source={{ uri: friend.avatarUrl }} style={styles.avatar} />
-                </View>
-              </LinearGradient>
-            ) : (
-              <View style={[styles.avatarRing, styles.avatarRingInactive]}>
-                <View style={styles.avatarInner}>
-                  <Image source={{ uri: friend.avatarUrl }} style={styles.avatar} />
-                </View>
-              </View>
-            )}
-            <Text style={styles.username} numberOfLines={1}>
-              {friend.username}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      {expanded ? (
+        <View style={styles.listContent}>
+          {friends.map((friend) => (
+            <Pressable
+              key={friend.id}
+              style={styles.listItem}
+              onPress={() => onFriendPress?.(friend)}
+            >
+              <AvatarWithRing friend={friend} />
+              <Text style={styles.listUsername} numberOfLines={1}>
+                {friend.username}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {friends.map((friend) => (
+            <Pressable
+              key={friend.id}
+              style={styles.friendItem}
+              onPress={() => onFriendPress?.(friend)}
+            >
+              <AvatarWithRing friend={friend} />
+              <Text style={styles.username} numberOfLines={1}>
+                {friend.username}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -118,5 +145,18 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     fontSize: 10.5,
     color: colors.onSurfaceVariant,
+  },
+  listContent: {
+    gap: spacing.md,
+  },
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  listUsername: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 15,
+    color: colors.onSurface,
   },
 });

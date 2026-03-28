@@ -36,7 +36,7 @@ export default function SearchScreen() {
           onTilePress={handleTilePress}
         />
       </ScrollView>
-      <SearchHeader onFilterPress={() => {}} />
+      <SearchHeader />
     </View>
   );
 }

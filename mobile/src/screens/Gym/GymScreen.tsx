@@ -1,15 +1,21 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useQuery } from '@tanstack/react-query';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
+import { api } from '@/src/lib/api';
 import { MapSection } from './components/MapSection';
 import { GymCard } from './components/GymCard';
-import { MOCK_GYMS } from './mockGyms';
-import type { Gym } from './mockGyms';
+import type { Gym } from '../../../../shared/types';
 
 export default function GymScreen() {
   const insets = useSafeAreaInsets();
+
+  const { data: gyms, isLoading, error } = useQuery({
+    queryKey: ['gyms'],
+    queryFn: () => api.get<{ data: Gym[] }>('/gyms').then((res) => res.data),
+  });
 
   function handleGymPress(_gym: Gym) {
     // TODO: navigate to gym detail screen
@@ -50,7 +56,13 @@ export default function GymScreen() {
 
         {/* ── Gym cards feed ───────────────────────────────────────────── */}
         <View style={styles.feed}>
-          {MOCK_GYMS.map((gym) => (
+          {isLoading && (
+            <ActivityIndicator color={colors.primary} style={styles.loader} />
+          )}
+          {error && (
+            <Text style={styles.errorText}>Failed to load gyms</Text>
+          )}
+          {gyms?.map((gym) => (
             <GymCard key={gym.id} gym={gym} onPress={handleGymPress} />
           ))}
         </View>
@@ -106,5 +118,15 @@ const styles = StyleSheet.create({
   feed: {
     paddingHorizontal: spacing.xl,
     gap: spacing.xxl,
+  },
+  loader: {
+    marginTop: spacing.xxl,
+  },
+  errorText: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+    color: colors.error,
+    textAlign: 'center',
+    marginTop: spacing.xxl,
   },
 });
