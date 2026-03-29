@@ -45,7 +45,8 @@ export const requireAuth: RequestHandler = async (req, _res, next) => {
   try {
     req.user = await extractPayload(header.slice(7));
     next();
-  } catch {
+  } catch (err) {
+    console.error('[auth] JWT verification failed:', err);
     next(new AppError('UNAUTHORIZED', 'Token expired or invalid', 401));
   }
 };
