@@ -1,0 +1,5 @@
+build:
+  docker:
+    web:
+      dockerfile: api/Dockerfile
+      context: api
