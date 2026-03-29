@@ -39,11 +39,13 @@ export const optionalAuth: RequestHandler = async (req, _res, next) => {
 
 export const requireAuth: RequestHandler = async (req, _res, next) => {
   const header = req.headers['authorization'];
+  console.log('[auth] header present:', !!header, 'starts with Bearer:', header?.startsWith('Bearer '));
   if (!header?.startsWith('Bearer ')) {
     return next(new AppError('UNAUTHORIZED', 'Missing or invalid authorization header', 401));
   }
   try {
     req.user = await extractPayload(header.slice(7));
+    console.log('[auth] verified userId:', req.user.userId);
     next();
   } catch (err) {
     console.error('[auth] JWT verification failed:', err);
