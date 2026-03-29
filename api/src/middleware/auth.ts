@@ -1,5 +1,5 @@
 import { RequestHandler } from 'express';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { jwtVerify } from 'jose';
 import { AppError } from './errorHandler';
 
 interface JwtPayload {
@@ -15,14 +15,12 @@ declare global {
   }
 }
 
-const supabaseUrl = process.env['SUPABASE_URL'];
-const JWKS = supabaseUrl
-  ? createRemoteJWKSet(new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`))
-  : null;
+const jwtSecret = process.env['SUPABASE_JWT_SECRET'];
+const secret = jwtSecret ? new TextEncoder().encode(jwtSecret) : null;
 
 async function extractPayload(token: string): Promise<JwtPayload> {
-  if (!JWKS) throw new AppError('SERVER_ERROR', 'SUPABASE_URL not configured', 500);
-  const { payload } = await jwtVerify(token, JWKS);
+  if (!secret) throw new AppError('SERVER_ERROR', 'SUPABASE_JWT_SECRET not configured', 500);
+  const { payload } = await jwtVerify(token, secret);
   if (!payload.sub) throw new Error('Missing sub claim');
   return { userId: payload.sub };
 }
