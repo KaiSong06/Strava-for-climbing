@@ -33,6 +33,36 @@ export interface RetiredProblemGroup {
   problems: GymProblem[];
 }
 
+export interface NearbyGymRow extends GymRow {
+  distance_km: number;
+}
+
+export async function findNearby(
+  lat: number,
+  lng: number,
+  radiusKm: number,
+  limit: number,
+): Promise<NearbyGymRow[]> {
+  const { rows } = await pool.query<NearbyGymRow>(
+    `WITH ranked AS (
+       SELECT id, name, city, lat, lng, default_retirement_days, created_at,
+              ROUND(CAST(
+                6371 * acos(
+                  LEAST(1.0, cos(radians($1)) * cos(radians(lat)) *
+                  cos(radians(lng) - radians($2)) +
+                  sin(radians($1)) * sin(radians(lat)))
+                ) AS numeric), 1) AS distance_km
+       FROM gyms
+     )
+     SELECT * FROM ranked
+     WHERE distance_km <= $3
+     ORDER BY distance_km ASC
+     LIMIT $4`,
+    [lat, lng, radiusKm, limit],
+  );
+  return rows;
+}
+
 export async function listAll(): Promise<GymRow[]> {
   const { rows } = await pool.query<GymRow>(
     'SELECT id, name, city, lat, lng, default_retirement_days, created_at FROM gyms ORDER BY name',

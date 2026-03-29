@@ -7,7 +7,7 @@ import type { FeedItem, PaginatedResponse } from '../../../../shared/types';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 import { typography } from '@/src/theme/typography';
-import { HomeHeader, HEADER_CONTENT_HEIGHT } from './components/HomeHeader';
+import { CruxBanner, BANNER_HEIGHT } from '@/src/components/CruxBanner';
 import { AscentPostCard } from './components/AscentPostCard';
 import type { AscentPostData } from './components/AscentPostCard';
 
@@ -31,7 +31,7 @@ function feedItemToCard(item: FeedItem): AscentPostData {
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const topPadding = insets.top + HEADER_CONTENT_HEIGHT + spacing.lg;
+  const topPadding = insets.top + BANNER_HEIGHT + spacing.lg;
   const accessToken = useAuthStore((s) => s.accessToken);
 
   const { data, isLoading, error } = useQuery<PaginatedResponse<FeedItem>>({
@@ -63,7 +63,7 @@ export default function HomeScreen() {
           )
         }
       />
-      <HomeHeader onNotificationsPress={() => console.log('Notifications')} />
+      <CruxBanner onNotificationsPress={() => console.log('Notifications')} />
     </View>
   );
 }

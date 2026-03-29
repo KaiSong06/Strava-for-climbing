@@ -167,6 +167,38 @@ export async function getGymFeed(
   return paginate(rows, limit);
 }
 
+export async function getDiscoverFeed(
+  viewerId: string | undefined,
+  cursor?: string,
+  limit = 20,
+): Promise<{ data: FeedItem[]; cursor: string | null; has_more: boolean }> {
+  const params: unknown[] = [limit + 1];
+  let whereExtra = '';
+
+  if (viewerId) {
+    params.push(viewerId);
+    whereExtra = `AND a.user_id != $${params.length}`;
+  }
+
+  const cursorExtra = cursor
+    ? (params.push(cursor), cursorClause(params.length))
+    : '';
+
+  const { rows } = await pool.query<FeedRow>(
+    `SELECT ${FEED_COLS}
+     FROM ascents a
+     ${FEED_JOINS}
+     WHERE a.visibility = 'public'
+     ${whereExtra}
+     ${cursorExtra}
+     ORDER BY a.logged_at DESC, a.id DESC
+     LIMIT $1`,
+    params,
+  );
+
+  return paginate(rows, limit);
+}
+
 export async function getUserAscents(
   targetUserId: string,
   viewerId: string | undefined,

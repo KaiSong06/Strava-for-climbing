@@ -4,12 +4,27 @@ import { requireAuth } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
 import { pool } from '../db/pool';
 import * as userService from '../services/userService';
+import * as friendsService from '../services/friendsService';
 
 export const followsRouter = Router();
 
 const paginationSchema = z.object({
   cursor: z.string().uuid().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+// GET /users/me/friends — followed users with recent activity status
+// Must be declared before /:username routes so "me" isn't matched as a username
+followsRouter.get('/me/friends', requireAuth, async (req, res, next) => {
+  try {
+    const { limit } = z
+      .object({ limit: z.coerce.number().int().min(1).max(50).default(20) })
+      .parse(req.query);
+    const data = await friendsService.getFollowingWithActivity(req.user!.userId, limit);
+    res.json({ data });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // POST /users/:username/follow

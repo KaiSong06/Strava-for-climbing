@@ -14,6 +14,30 @@ gymsRouter.get('/', async (_req, res, next) => {
   }
 });
 
+// GET /gyms/nearby?lat=X&lng=Y&radius=50&limit=10
+gymsRouter.get('/nearby', async (req, res, next) => {
+  try {
+    const query = z
+      .object({
+        lat: z.coerce.number().min(-90).max(90),
+        lng: z.coerce.number().min(-180).max(180),
+        radius: z.coerce.number().min(1).max(200).default(50),
+        limit: z.coerce.number().int().min(1).max(50).default(10),
+      })
+      .parse(req.query);
+
+    const gyms = await gymService.findNearby(
+      query.lat,
+      query.lng,
+      query.radius,
+      query.limit,
+    );
+    res.json({ data: gyms });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /gyms/:gymId — full detail + aggregate stats
 gymsRouter.get('/:gymId', async (req, res, next) => {
   try {

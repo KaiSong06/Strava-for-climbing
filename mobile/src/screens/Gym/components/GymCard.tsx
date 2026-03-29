@@ -7,9 +7,10 @@ import type { Gym } from '../../../../../shared/types';
 interface Props {
   gym: Gym;
   onPress: (gym: Gym) => void;
+  distance_km?: number;
 }
 
-export function GymCard({ gym, onPress }: Props) {
+export function GymCard({ gym, onPress, distance_km }: Props) {
   return (
     <Pressable
       onPress={() => onPress(gym)}
@@ -18,7 +19,9 @@ export function GymCard({ gym, onPress }: Props) {
       <View style={styles.infoRow}>
         <View style={styles.infoText}>
           <Text style={styles.gymName}>{gym.name}</Text>
-          <Text style={styles.gymMeta}>{gym.city}</Text>
+          <Text style={styles.gymMeta}>
+            {gym.city}{distance_km != null ? ` \u2022 ${distance_km.toFixed(1)} km` : ''}
+          </Text>
         </View>
         <View style={styles.navButton}>
           <MaterialCommunityIcons name="arrow-right" size={20} color={colors.onPrimary} />

@@ -1,67 +1,93 @@
-import { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, TextInput, View } from 'react-native';
+import { useRef, useState, useEffect } from 'react';
+import {
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import MapView, { Marker, type Region } from 'react-native-maps';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
+import { darkMapStyle } from './mapStyle';
+import type { Gym } from '../../../../../shared/types';
 
-// Vertical grid line positions (%) to suggest map street tiles
-const V_LINES = ['13%', '25%', '38%', '50%', '63%', '75%', '88%'] as const;
-// Horizontal grid line positions (%)
-const H_LINES = ['18%', '36%', '55%', '73%'] as const;
+const DEFAULT_REGION: Region = {
+  latitude: 45.42,
+  longitude: -75.69,
+  latitudeDelta: 0.5,
+  longitudeDelta: 0.5,
+};
 
-export function MapSection() {
-  const pulseScale = useRef(new Animated.Value(0.4)).current;
-  const pulseOpacity = useRef(new Animated.Value(0.7)).current;
+interface MapSectionProps {
+  onSearch: (address: string) => void;
+  isSearching: boolean;
+  searchError: string | null;
+  gyms: Array<Gym & { distance_km?: number }>;
+  region: { lat: number; lng: number } | null;
+}
+
+export function MapSection({
+  onSearch,
+  isSearching,
+  searchError,
+  gyms,
+  region,
+}: MapSectionProps) {
+  const mapRef = useRef<MapView>(null);
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
-    const animation = Animated.loop(
-      Animated.parallel([
-        Animated.sequence([
-          Animated.timing(pulseScale, {
-            toValue: 2.2,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseScale, {
-            toValue: 0.4,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.sequence([
-          Animated.timing(pulseOpacity, {
-            toValue: 0,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseOpacity, {
-            toValue: 0.7,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-        ]),
-      ])
-    );
-    animation.start();
-    return () => animation.stop();
-  }, [pulseScale, pulseOpacity]);
+    if (region) {
+      mapRef.current?.animateToRegion(
+        {
+          latitude: region.lat,
+          longitude: region.lng,
+          latitudeDelta: 0.15,
+          longitudeDelta: 0.15,
+        },
+        600,
+      );
+    }
+  }, [region]);
+
+  function handleSubmit() {
+    const trimmed = query.trim();
+    if (trimmed.length > 0) {
+      onSearch(trimmed);
+    }
+  }
 
   return (
     <View style={styles.container}>
-      {/* Dark navy map placeholder — replace this View with <MapView> from
-          react-native-maps (and expo-location for user position) once installed. */}
-      <View style={styles.mapBg} />
+      <MapView
+        ref={mapRef}
+        style={StyleSheet.absoluteFill}
+        initialRegion={DEFAULT_REGION}
+        customMapStyle={Platform.OS === 'android' ? darkMapStyle : undefined}
+        userInterfaceStyle="dark"
+        showsUserLocation={false}
+        showsPointsOfInterest={false}
+        toolbarEnabled={false}
+      >
+        {gyms.map((gym) => (
+          <Marker
+            key={gym.id}
+            coordinate={{ latitude: gym.lat, longitude: gym.lng }}
+            title={gym.name}
+            description={gym.city}
+          >
+            <View style={styles.markerOuter}>
+              <View style={styles.markerInner} />
+            </View>
+          </Marker>
+        ))}
+      </MapView>
 
-      {/* Subtle grid lines to suggest street tiles */}
-      {V_LINES.map((left) => (
-        <View key={left} style={[styles.gridLineV, { left }]} />
-      ))}
-      {H_LINES.map((top) => (
-        <View key={top} style={[styles.gridLineH, { top }]} />
-      ))}
-
-      {/* Bottom gradient: transparent → black/60% for search bar blend */}
+      {/* Bottom gradient for search bar blend */}
       <LinearGradient
         colors={['transparent', 'rgba(0,0,0,0.6)']}
         style={StyleSheet.absoluteFill}
@@ -70,39 +96,36 @@ export function MapSection() {
         pointerEvents="none"
       />
 
-      {/* User location pin — centred, above the search bar area */}
-      <View style={styles.pinCenter} pointerEvents="none">
-        {/* pinStack stacks the glow ring behind the pin circle using absoluteFill */}
-        <View style={styles.pinStack}>
-          <Animated.View
-            style={[
-              styles.pulseRing,
-              { transform: [{ scale: pulseScale }], opacity: pulseOpacity },
-            ]}
-          />
-          <View style={styles.pinOuter}>
-            <View style={styles.pinDot} />
-          </View>
-        </View>
-      </View>
-
       {/* Frosted-glass search bar */}
       <View style={styles.searchWrapper}>
         <View style={styles.searchBar}>
-          <MaterialCommunityIcons
-            name="magnify"
-            size={20}
-            color={`${colors.onSurface}80`}
-            style={styles.searchIcon}
-          />
+          {isSearching ? (
+            <ActivityIndicator
+              size="small"
+              color={`${colors.onSurface}80`}
+              style={styles.searchIcon}
+            />
+          ) : (
+            <MaterialCommunityIcons
+              name="magnify"
+              size={20}
+              color={`${colors.onSurface}80`}
+              style={styles.searchIcon}
+            />
+          )}
           <TextInput
             style={styles.searchInput}
             placeholder="Find a gym near you..."
             placeholderTextColor={`${colors.onSurfaceVariant}b3`}
             returnKeyType="search"
             selectionColor={colors.primary}
+            value={query}
+            onChangeText={setQuery}
+            onSubmitEditing={handleSubmit}
+            editable={!isSearching}
           />
         </View>
+        {searchError && <Text style={styles.errorText}>{searchError}</Text>}
       </View>
     </View>
   );
@@ -116,65 +139,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
-  mapBg: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#141a24',
-  },
-  gridLineV: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 1,
-    backgroundColor: 'rgba(168,200,255,0.05)',
-  },
-  gridLineH: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: 'rgba(168,200,255,0.05)',
-  },
-  // Full-cover overlay that centres the pin, with bottom room for the search bar
-  pinCenter: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 72, // clear the search bar height
+  markerOuter: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: `${colors.primary}40`,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // 96×96 fixed-size container that stacks the ring behind the pin using absoluteFill
-  pinStack: {
-    width: 96,
-    height: 96,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pulseRing: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 48,
-    backgroundColor: 'rgba(168,200,255,0.2)',
-  },
-  pinOuter: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.onSurface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  pinDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+  markerInner: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: colors.primary,
   },
   searchWrapper: {
@@ -205,5 +181,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.onSurface,
     padding: 0,
+  },
+  errorText: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+    color: colors.error,
+    marginTop: spacing.xs,
+    marginLeft: spacing.sm,
   },
 });

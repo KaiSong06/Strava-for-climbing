@@ -6,11 +6,15 @@ import { spacing } from '@/src/theme/spacing';
 
 export const SEARCH_HEADER_CONTENT_HEIGHT = 56;
 
-export function SearchHeader() {
+interface SearchHeaderProps {
+  bannerHeight?: number;
+}
+
+export function SearchHeader({ bannerHeight = 0 }: SearchHeaderProps) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + spacing.sm }]}>
+    <View style={[styles.container, { paddingTop: insets.top + spacing.sm + bannerHeight }]}>
       <View style={styles.inner}>
         <View style={styles.inputWrapper}>
           <MaterialCommunityIcons

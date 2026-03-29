@@ -8,6 +8,7 @@ import { useAuthStore } from '@/src/stores/authStore';
 import { useFollowStore } from '@/src/stores/followStore';
 import type { AuthUser, FeedItem, PaginatedResponse } from '../../../../shared/types';
 import { colors } from '@/src/theme/colors';
+import { CruxBanner, BANNER_HEIGHT } from '@/src/components/CruxBanner';
 import { ProfileHeader } from './components/ProfileHeader';
 import { ActionButtons } from './components/ActionButtons';
 import { RecentActivity } from './components/RecentActivity';
@@ -63,8 +64,7 @@ export default function AccountScreen() {
   }, [profile?.username, loadFollowing]);
 
   function handleEditProfile() {
-    // TODO: navigate to EditProfile screen once implemented
-    Alert.alert('Coming Soon', 'Edit Profile will be available in a future update.');
+    router.push('/edit-profile' as Parameters<typeof router.push>[0]);
   }
 
   function handleSignOut() {
@@ -108,40 +108,44 @@ export default function AccountScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.centered, { paddingTop: insets.top }]}>
+      <View style={[styles.centered, { paddingTop: insets.top + BANNER_HEIGHT }]}>
         <ActivityIndicator size="large" color={colors.primary} />
+        <CruxBanner />
       </View>
     );
   }
 
   if (error != null || profile == null) {
     return (
-      <View style={[styles.centered, { paddingTop: insets.top }]}>
+      <View style={[styles.centered, { paddingTop: insets.top + BANNER_HEIGHT }]}>
         <Text style={styles.errorText}>Failed to load profile.</Text>
+        <CruxBanner />
       </View>
     );
   }
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 24 }]}
-      showsVerticalScrollIndicator={false}
-    >
-      <ProfileHeader
-        profile={profile}
-        onFollowersPress={handleFollowers}
-        onFollowingPress={handleFollowing}
-      />
+    <View style={styles.screen}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + BANNER_HEIGHT + 24 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <ProfileHeader
+          profile={profile}
+          onFollowersPress={handleFollowers}
+          onFollowingPress={handleFollowing}
+        />
 
-      <ActionButtons onEditProfile={handleEditProfile} onSignOut={handleSignOut} />
+        <ActionButtons onEditProfile={handleEditProfile} onSignOut={handleSignOut} />
 
-      <RecentActivity
-        activities={(ascentsPage?.data ?? []).map(feedItemToActivity)}
-        onViewAll={handleViewAll}
-        onActivityPress={handleActivityPress}
-      />
-    </ScrollView>
+        <RecentActivity
+          activities={(ascentsPage?.data ?? []).map(feedItemToActivity)}
+          onViewAll={handleViewAll}
+          onActivityPress={handleActivityPress}
+        />
+      </ScrollView>
+      <CruxBanner />
+    </View>
   );
 }
 

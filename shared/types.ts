@@ -6,6 +6,8 @@ export interface User {
   display_name: string;
   avatar_url: string | null;
   home_gym_id: string | null;
+  username_changed_at: string | null;
+  default_visibility: AscentVisibility;
   created_at: string;
 }
 
@@ -31,6 +33,11 @@ export interface Gym {
   lng: number;
   default_retirement_days: number;
   created_at: string;
+}
+
+/** Returned by GET /gyms/nearby — Gym with computed distance */
+export interface NearbyGym extends Gym {
+  distance_km: number;
 }
 
 // ─── Problems ─────────────────────────────────────────────────────────────────

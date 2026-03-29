@@ -16,9 +16,11 @@ usersRouter.get('/me', requireAuth, async (req, res, next) => {
 });
 
 const patchMeSchema = z.object({
+  username: z.string().regex(/^[a-zA-Z0-9_]{3,20}$/).optional(),
   display_name: z.string().min(1).max(50).optional(),
   home_gym_id: z.string().uuid().nullable().optional(),
   avatar_base64: z.string().optional(),
+  default_visibility: z.enum(['public', 'friends', 'private']).optional(),
 });
 
 usersRouter.patch('/me', requireAuth, async (req, res, next) => {
