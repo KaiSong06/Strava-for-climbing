@@ -2,10 +2,10 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY api/package*.json ./
+COPY package*.json ./
 RUN npm ci
 
-COPY api/ .
+COPY . .
 RUN npm run build
 
 EXPOSE 3001
