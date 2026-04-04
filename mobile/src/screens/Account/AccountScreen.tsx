@@ -99,7 +99,11 @@ export default function AccountScreen() {
   }
 
   function handleViewAll() {
-    // TODO: navigate to full ascent history once implemented
+    if (!profile) return;
+    router.push({
+      pathname: '/ascent-history/[username]',
+      params: { username: profile.username },
+    } as Parameters<typeof router.push>[0]);
   }
 
   function handleActivityPress() {

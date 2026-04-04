@@ -148,6 +148,7 @@ function RootLayoutNav() {
           <Stack.Screen name="gym/[gymId]" options={{ title: '' }} />
           <Stack.Screen name="log-ascent/[problemId]" options={{ title: 'Log Ascent', presentation: 'modal' }} />
           <Stack.Screen name="feed/gym" options={{ title: 'Gym Activity' }} />
+          <Stack.Screen name="ascent-history/[username]" options={{ title: 'Ascent History' }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
         </Stack>
       </ThemeProvider>
