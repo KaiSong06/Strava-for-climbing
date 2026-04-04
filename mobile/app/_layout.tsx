@@ -145,6 +145,7 @@ function RootLayoutNav() {
           <Stack.Screen name="follow-list" options={{ title: 'Follow List' }} />
           <Stack.Screen name="profile/[username]" options={{ title: '' }} />
           <Stack.Screen name="problem/[id]" options={{ title: 'Problem' }} />
+          <Stack.Screen name="ascent/[id]" options={{ title: 'Ascent' }} />
           <Stack.Screen name="gym/[gymId]" options={{ title: '' }} />
           <Stack.Screen name="log-ascent/[problemId]" options={{ title: 'Log Ascent', presentation: 'modal' }} />
           <Stack.Screen name="feed/gym" options={{ title: 'Gym Activity' }} />
