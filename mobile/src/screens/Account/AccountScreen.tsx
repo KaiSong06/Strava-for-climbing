@@ -23,6 +23,7 @@ function capitalize(s: string): string {
 function feedItemToActivity(item: FeedItem): AscentActivity {
   return {
     id: item.id,
+    problemId: item.problem.id,
     colour: capitalize(item.problem.colour),
     grade: item.problem.consensus_grade ?? item.user_grade ?? 'Ungraded',
     gymName: item.problem.gym.name,
@@ -99,11 +100,12 @@ export default function AccountScreen() {
   }
 
   function handleViewAll() {
-    // TODO: navigate to full ascent history once implemented
+    if (!profile) return;
+    router.push({ pathname: '/profile/[username]', params: { username: profile.username } } as Parameters<typeof router.push>[0]);
   }
 
-  function handleActivityPress() {
-    // TODO: navigate to ascent detail once implemented
+  function handleActivityPress(activity: AscentActivity) {
+    router.push({ pathname: '/problem/[id]', params: { id: activity.problemId } } as Parameters<typeof router.push>[0]);
   }
 
   if (isLoading) {

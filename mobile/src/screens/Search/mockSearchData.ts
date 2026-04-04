@@ -10,6 +10,10 @@ export interface DiscoveryTile {
   type: 'featured_climb' | 'gym_spotlight' | 'standard' | 'tall_video' | 'featured_athlete';
   /** Image URL — null for non-image tiles like gym_spotlight */
   imageUrl: string | null;
+  /** Problem ID for navigation (present on climb tiles) */
+  problemId?: string;
+  /** Gym ID for navigation (present on gym_spotlight tiles) */
+  gymId?: string;
   /** Climb-specific fields */
   grade?: string;
   problemName?: string;

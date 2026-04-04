@@ -1,5 +1,6 @@
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 import { CruxBanner, BANNER_HEIGHT } from '@/src/components/CruxBanner';
@@ -11,18 +12,24 @@ import type { FriendEntry, DiscoveryTile } from './mockSearchData';
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const topPadding = insets.top + BANNER_HEIGHT + SEARCH_HEADER_CONTENT_HEIGHT + spacing.xl;
 
   const { data: friends = [], isLoading: friendsLoading } = useFriends();
   const { data: tiles = [], isLoading: tilesLoading } = useDiscoverFeed();
   const isLoading = friendsLoading && tilesLoading;
 
-  function handleFriendPress(_friend: FriendEntry) {
-    // TODO: navigate to user profile
+  function handleFriendPress(friend: FriendEntry) {
+    const username = friend.username.replace(/^@/, '');
+    router.push({ pathname: '/profile/[username]', params: { username } } as Parameters<typeof router.push>[0]);
   }
 
-  function handleTilePress(_tile: DiscoveryTile) {
-    // TODO: navigate to ascent detail / gym detail
+  function handleTilePress(tile: DiscoveryTile) {
+    if (tile.type === 'gym_spotlight' && tile.gymId) {
+      router.push({ pathname: '/gym/[gymId]', params: { gymId: tile.gymId } } as Parameters<typeof router.push>[0]);
+    } else if (tile.problemId) {
+      router.push({ pathname: '/problem/[id]', params: { id: tile.problemId } } as Parameters<typeof router.push>[0]);
+    }
   }
 
   return (
