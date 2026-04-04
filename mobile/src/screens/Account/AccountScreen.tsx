@@ -101,7 +101,10 @@ export default function AccountScreen() {
 
   function handleViewAll() {
     if (!profile) return;
-    router.push({ pathname: '/profile/[username]', params: { username: profile.username } } as Parameters<typeof router.push>[0]);
+    router.push({
+      pathname: '/ascent-history/[username]',
+      params: { username: profile.username },
+    } as Parameters<typeof router.push>[0]);
   }
 
   function handleActivityPress(activity: AscentActivity) {
