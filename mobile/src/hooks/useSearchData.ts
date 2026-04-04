@@ -56,6 +56,7 @@ function feedItemsToTiles(items: FeedItem[]): DiscoveryTile[] {
       id: featuredItem.id,
       type: 'featured_climb',
       imageUrl: featuredItem.photo_urls[0],
+      problemId: featuredItem.problem.id,
       grade: grade || undefined,
       problemName: `${capitalize(featuredItem.problem.colour)} ${grade}`.trim(),
     });
@@ -72,19 +73,22 @@ function feedItemsToTiles(items: FeedItem[]): DiscoveryTile[] {
       gymCounts.set(gym.id, { count: 1, name: gym.name });
     }
   }
+  let topGymId: string | undefined;
   let topGym: { name: string } | undefined;
   let topCount = 0;
-  for (const entry of gymCounts.values()) {
+  for (const [gymId, entry] of gymCounts.entries()) {
     if (entry.count > topCount) {
       topCount = entry.count;
       topGym = entry;
+      topGymId = gymId;
     }
   }
-  if (topGym) {
+  if (topGym && topGymId) {
     tiles.push({
       id: `gym-spotlight`,
       type: 'gym_spotlight',
       imageUrl: null,
+      gymId: topGymId,
       gymName: topGym.name,
     });
   }
@@ -99,6 +103,7 @@ function feedItemsToTiles(items: FeedItem[]): DiscoveryTile[] {
       id: remainingPhotos[0].id,
       type: 'standard',
       imageUrl: remainingPhotos[0].photo_urls[0],
+      problemId: remainingPhotos[0].problem.id,
     });
   }
 
@@ -109,6 +114,7 @@ function feedItemsToTiles(items: FeedItem[]): DiscoveryTile[] {
       id: remainingPhotos[i].id,
       type: 'standard',
       imageUrl: remainingPhotos[i].photo_urls[0],
+      problemId: remainingPhotos[i].problem.id,
     });
   }
 
@@ -120,6 +126,7 @@ function feedItemsToTiles(items: FeedItem[]): DiscoveryTile[] {
       id: tallCandidate.id,
       type: 'tall_video',
       imageUrl: tallCandidate.photo_urls[0],
+      problemId: tallCandidate.problem.id,
       isVideo: true,
     });
   }
@@ -132,6 +139,7 @@ function feedItemsToTiles(items: FeedItem[]): DiscoveryTile[] {
       id: nextStd.id,
       type: 'standard',
       imageUrl: nextStd.photo_urls[0],
+      problemId: nextStd.problem.id,
     });
   }
 
@@ -145,6 +153,7 @@ function feedItemsToTiles(items: FeedItem[]): DiscoveryTile[] {
       id: athleteItem.id,
       type: 'featured_athlete',
       imageUrl: null,
+      problemId: athleteItem.problem.id,
       athlete: {
         username: `@${athleteItem.user.username}`,
         avatarUrl: athleteItem.user.avatar_url ?? '',
@@ -163,6 +172,7 @@ function feedItemsToTiles(items: FeedItem[]): DiscoveryTile[] {
       id: item.id,
       type: 'standard',
       imageUrl: item.photo_urls[0],
+      problemId: item.problem.id,
     });
   }
 

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { colors } from '@/src/theme/colors';
@@ -19,6 +20,7 @@ const MapSection = lazy(() =>
 
 export default function GymScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   // All gyms (default view before search)
   const { data: allGyms, isLoading, error } = useQuery({
@@ -42,8 +44,8 @@ export default function GymScreen() {
   const displayGyms = searchCoords ? nearbyGyms : allGyms;
   const isLoadingGyms = searchCoords ? isNearbyLoading : isLoading;
 
-  function handleGymPress(_gym: Gym) {
-    // TODO: navigate to gym detail screen
+  function handleGymPress(gym: Gym) {
+    router.push({ pathname: '/gym/[gymId]', params: { gymId: gym.id } } as Parameters<typeof router.push>[0]);
   }
 
   return (

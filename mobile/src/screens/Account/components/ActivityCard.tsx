@@ -4,6 +4,7 @@ import { colors } from '@/src/theme/colors';
 
 export interface AscentActivity {
   id: string;
+  problemId: string;
   colour: string;
   grade: string;
   gymName: string;
