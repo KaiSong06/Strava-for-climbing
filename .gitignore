@@ -39,3 +39,4 @@ npm-debug.log*
 mobile/.expo/
 mobile/android/
 mobile/ios/
+.claude/
