@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, {
   cancelAnimation,
@@ -96,10 +97,16 @@ export default function RecordScreen() {
     confidence,
     needsConfirmation,
     isAutoMatched,
+    isUnmatched,
   } = useMatchResult(pipelineResult);
 
+  const router = useRouter();
+
   const showOverlay = pipelineStatus === 'uploading' || pipelineStatus === 'processing';
-  const showResult = pipelineStatus === 'matched' || pipelineStatus === 'awaiting_confirmation';
+  const showResult =
+    pipelineStatus === 'matched' ||
+    pipelineStatus === 'awaiting_confirmation' ||
+    pipelineStatus === 'unmatched';
 
   // ── Processing animation ───────────────────────────────────────────────────
 
@@ -153,7 +160,7 @@ export default function RecordScreen() {
 
   useEffect(() => {
     if (pipelineStatus !== 'confirmed') return;
-    Alert.alert('Climb logged!', 'Your ascent has been recorded.', [{ text: 'OK' }]);
+    // Reset form state after successful confirmation (navigation already happened in the handler)
     setProject(null);
     setPhotos([]);
     setHoldColor(null);
@@ -200,26 +207,36 @@ export default function RecordScreen() {
     void submitPipeline(photos, holdColor, gymId);
   }, [photos, holdColor, gymId, submitPipeline]);
 
-  const handleConfirmMatch = useCallback(() => {
+  const handleConfirmMatch = useCallback(async () => {
     if (!matchedProblemId) return;
-    void confirmPipeline({
-      problemId: matchedProblemId,
-      user_grade: difficulty,
-      rating: null,
-      notes: null,
-      visibility: 'public',
-    });
-  }, [matchedProblemId, difficulty, confirmPipeline]);
+    try {
+      const res = await confirmPipeline({
+        problemId: matchedProblemId,
+        user_grade: difficulty,
+        rating: null,
+        notes: null,
+        visibility: 'public',
+      });
+      router.push({ pathname: '/problem/[id]', params: { id: res.problemId } });
+    } catch {
+      // error state is set by the hook
+    }
+  }, [matchedProblemId, difficulty, confirmPipeline, router]);
 
-  const handleNewProblem = useCallback(() => {
-    void confirmPipeline({
-      problemId: 'new',
-      user_grade: difficulty,
-      rating: null,
-      notes: null,
-      visibility: 'public',
-    });
-  }, [difficulty, confirmPipeline]);
+  const handleNewProblem = useCallback(async () => {
+    try {
+      const res = await confirmPipeline({
+        problemId: 'new',
+        user_grade: difficulty,
+        rating: null,
+        notes: null,
+        visibility: 'public',
+      });
+      router.push({ pathname: '/problem/[id]', params: { id: res.problemId } });
+    } catch {
+      // error state is set by the hook
+    }
+  }, [difficulty, confirmPipeline, router]);
 
   const isPostEnabled = photos.length >= 1 && holdColor !== null && gymId !== null;
 
@@ -378,6 +395,34 @@ export default function RecordScreen() {
               ) : null}
               <Pressable style={styles.resultButtonSecondary} onPress={handleNewProblem}>
                 <Text style={styles.resultButtonSecondaryText}>No, it's a new problem</Text>
+              </Pressable>
+            </View>
+          ) : isUnmatched ? (
+            <View style={styles.resultContent}>
+              <MaterialCommunityIcons name="plus-circle-outline" size={56} color={colors.primary} />
+              <Text style={styles.resultHeading}>New problem detected</Text>
+              <Text style={styles.resultSubtext}>
+                No matching problem found. Create it as a new problem to start tracking ascents.
+              </Text>
+              {holdColor && (
+                <View style={styles.newProblemDetail}>
+                  <View style={[styles.colorDot, { backgroundColor: holdColor }]} />
+                  <Text style={styles.newProblemDetailText}>
+                    {HOLD_COLOURS.find((c) => c.hex === holdColor)?.label ?? 'Unknown'} holds
+                  </Text>
+                </View>
+              )}
+              {difficulty && (
+                <View style={styles.newProblemDetail}>
+                  <MaterialCommunityIcons name="trending-up" size={16} color={colors.onSurfaceVariant} />
+                  <Text style={styles.newProblemDetailText}>{difficulty}</Text>
+                </View>
+              )}
+              <Pressable style={styles.resultButtonPrimary} onPress={handleNewProblem}>
+                <Text style={styles.resultButtonPrimaryText}>Create New Problem</Text>
+              </Pressable>
+              <Pressable style={styles.resultButtonSecondary} onPress={resetPipeline}>
+                <Text style={styles.resultButtonSecondaryText}>Cancel</Text>
               </Pressable>
             </View>
           ) : null}
@@ -711,6 +756,21 @@ const styles = StyleSheet.create({
   resultButtonSecondary: {
     paddingVertical: spacing.md,
     alignItems: 'center',
+  },
+  resultSubtext: {
+    fontSize: 14,
+    color: colors.onSurfaceVariant,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  newProblemDetail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  newProblemDetailText: {
+    fontSize: 14,
+    color: colors.onSurface,
   },
   resultButtonSecondaryText: {
     color: colors.onSurfaceVariant,
