@@ -20,12 +20,19 @@ export interface AscentWithDetails {
   notes: string | null;
   visibility: AscentVisibility;
   logged_at: string;
+  user: {
+    id: string;
+    username: string;
+    display_name: string;
+    avatar_url: string | null;
+  };
   problem: {
     id: string;
     colour: string;
     consensus_grade: string | null;
     gym: { id: string; name: string };
   };
+  photo_urls: string[];
 }
 
 /** Flash = first ever send; send = already logged at least once before. */
@@ -58,15 +65,23 @@ export async function getAscentById(ascentId: string): Promise<AscentWithDetails
   type Row = {
     id: string; type: string; user_grade: string | null; rating: number | null;
     notes: string | null; visibility: string; logged_at: string;
+    user_id: string; username: string; display_name: string; avatar_url: string | null;
     problem_id: string; colour: string; consensus_grade: string | null;
     gym_id: string; gym_name: string;
+    photo_urls: string[] | null;
   };
 
   const { rows } = await pool.query<Row>(
     `SELECT a.id, a.type, a.user_grade, a.rating, a.notes, a.visibility, a.logged_at,
+            u.id AS user_id, u.username, u.display_name, u.avatar_url,
             p.id AS problem_id, p.colour, p.consensus_grade,
-            g.id AS gym_id, g.name AS gym_name
+            g.id AS gym_id, g.name AS gym_name,
+            (SELECT upl.photo_urls FROM uploads upl
+             WHERE upl.user_id = a.user_id AND upl.problem_id = a.problem_id
+             AND upl.processing_status IN ('matched', 'complete', 'awaiting_confirmation')
+             ORDER BY upl.created_at DESC LIMIT 1) AS photo_urls
      FROM ascents a
+     JOIN users    u ON u.id = a.user_id
      JOIN problems p ON p.id = a.problem_id
      JOIN gyms     g ON g.id = p.gym_id
      WHERE a.id = $1`,
@@ -82,11 +97,18 @@ export async function getAscentById(ascentId: string): Promise<AscentWithDetails
     notes: r.notes,
     visibility: r.visibility as AscentVisibility,
     logged_at: r.logged_at,
+    user: {
+      id: r.user_id,
+      username: r.username,
+      display_name: r.display_name,
+      avatar_url: r.avatar_url,
+    },
     problem: {
       id: r.problem_id,
       colour: r.colour,
       consensus_grade: r.consensus_grade,
       gym: { id: r.gym_id, name: r.gym_name },
     },
+    photo_urls: r.photo_urls ?? [],
   };
 }
