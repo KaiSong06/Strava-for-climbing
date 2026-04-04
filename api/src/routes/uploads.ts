@@ -47,10 +47,28 @@ const parsePhotos: RequestHandler = (req, res, next) => {
 
 const confirmBodySchema = z.object({
   problemId: z.union([z.literal('new'), z.string().uuid()]),
-  user_grade: z.string().max(10).nullish().transform((v) => v ?? null),
-  rating: z.number().int().min(1).max(5).nullish().transform((v) => v ?? null),
-  notes: z.string().max(280).nullish().transform((v) => v ?? null),
-  video_url: z.string().url().nullish().transform((v) => v ?? null),
+  user_grade: z
+    .string()
+    .max(10)
+    .nullish()
+    .transform((v) => v ?? null),
+  rating: z
+    .number()
+    .int()
+    .min(1)
+    .max(5)
+    .nullish()
+    .transform((v) => v ?? null),
+  notes: z
+    .string()
+    .max(280)
+    .nullish()
+    .transform((v) => v ?? null),
+  video_url: z
+    .string()
+    .url()
+    .nullish()
+    .transform((v) => v ?? null),
   visibility: z.enum(['public', 'friends', 'private']).default('public'),
 });
 
@@ -73,12 +91,7 @@ uploadsRouter.post('/', requireAuth, uploadLimiter, parsePhotos, async (req, res
       files.map((f) => uploadBuffer(f.buffer, f.mimetype, 'problems')),
     );
 
-    const uploadId = await uploadService.createUpload(
-      req.user!.userId,
-      gym_id,
-      colour,
-      photoUrls,
-    );
+    const uploadId = await uploadService.createUpload(req.user!.userId, gym_id, colour, photoUrls);
 
     await visionQueue.add('process', {
       uploadId,
@@ -171,11 +184,9 @@ uploadsRouter.post('/:uploadId/dispute', requireAuth, async (req, res, next) => 
     const { uploadId } = req.params;
 
     const { rows: uploadRows } = await pool.query<{
-      id: string; problem_id: string | null;
-    }>(
-      `SELECT id, problem_id FROM uploads WHERE id = $1`,
-      [uploadId],
-    );
+      id: string;
+      problem_id: string | null;
+    }>(`SELECT id, problem_id FROM uploads WHERE id = $1`, [uploadId]);
     const upload = uploadRows[0];
     if (!upload) throw new AppError('NOT_FOUND', 'Upload not found', 404);
     if (!upload.problem_id) {
@@ -186,7 +197,8 @@ uploadsRouter.post('/:uploadId/dispute', requireAuth, async (req, res, next) => 
       `SELECT id FROM match_disputes WHERE upload_id = $1 AND status = 'open'`,
       [uploadId],
     );
-    if (existing[0]) throw new AppError('CONFLICT', 'An open dispute already exists for this upload', 409);
+    if (existing[0])
+      throw new AppError('CONFLICT', 'An open dispute already exists for this upload', 409);
 
     const { rows } = await pool.query<{ id: string }>(
       `INSERT INTO match_disputes (upload_id, reported_by, status)

@@ -11,5 +11,5 @@ healthRouter.get('/', async (_req, res, next) => {
     // DB not required for health check to return a response
     res.json({ status: 'ok', db: 'disconnected' });
   }
-  next;
+  next();
 });

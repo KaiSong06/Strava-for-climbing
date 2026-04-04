@@ -61,13 +61,13 @@ export default function FollowListScreen() {
         <UserRow
           user={item}
           myUserId={myUserId}
-          onPress={() => router.push({ pathname: '/profile/[username]', params: { username: item.username } })}
+          onPress={() =>
+            router.push({ pathname: '/profile/[username]', params: { username: item.username } })
+          }
         />
       )}
       ListEmptyComponent={<Text style={styles.empty}>No users found.</Text>}
-      ListFooterComponent={
-        isFetchingNextPage ? <ActivityIndicator style={styles.loader} /> : null
-      }
+      ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={styles.loader} /> : null}
       onEndReached={onEndReached}
       onEndReachedThreshold={0.3}
     />

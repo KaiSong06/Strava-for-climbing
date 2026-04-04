@@ -20,7 +20,8 @@ export function GymCard({ gym, onPress, distance_km }: Props) {
         <View style={styles.infoText}>
           <Text style={styles.gymName}>{gym.name}</Text>
           <Text style={styles.gymMeta}>
-            {gym.city}{distance_km != null ? ` \u2022 ${distance_km.toFixed(1)} km` : ''}
+            {gym.city}
+            {distance_km != null ? ` \u2022 ${distance_km.toFixed(1)} km` : ''}
           </Text>
         </View>
         <View style={styles.navButton}>

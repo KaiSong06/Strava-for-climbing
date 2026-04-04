@@ -11,12 +11,14 @@ const app = express();
 const PORT = process.env['PORT'] ?? 3001;
 
 const corsOrigin = process.env['CORS_ORIGIN'];
-app.use(cors({
-  origin: corsOrigin ? corsOrigin.split(',') : true,
-  credentials: true,
-  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Internal-Secret'],
-}));
+app.use(
+  cors({
+    origin: corsOrigin ? corsOrigin.split(',') : true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Internal-Secret'],
+  }),
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

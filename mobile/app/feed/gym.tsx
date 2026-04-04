@@ -50,15 +50,22 @@ export default function GymFeedScreen() {
       renderItem={({ item }) => (
         <FeedCard
           item={item}
-          onPress={() => router.push({ pathname: '/problem/[id]', params: { id: item.problem.id } })}
-          onPressUser={() => router.push({ pathname: '/profile/[username]', params: { username: item.user.username } })}
-          onPressGym={() => router.push({ pathname: '/gym/[gymId]', params: { gymId: item.problem.gym.id } })}
+          onPress={() =>
+            router.push({ pathname: '/problem/[id]', params: { id: item.problem.id } })
+          }
+          onPressUser={() =>
+            router.push({
+              pathname: '/profile/[username]',
+              params: { username: item.user.username },
+            })
+          }
+          onPressGym={() =>
+            router.push({ pathname: '/gym/[gymId]', params: { gymId: item.problem.gym.id } })
+          }
         />
       )}
       ListEmptyComponent={<Text style={styles.empty}>No recent activity at this gym.</Text>}
-      ListFooterComponent={
-        isFetchingNextPage ? <ActivityIndicator style={styles.loader} /> : null
-      }
+      ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={styles.loader} /> : null}
       onEndReached={() => {
         if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
       }}

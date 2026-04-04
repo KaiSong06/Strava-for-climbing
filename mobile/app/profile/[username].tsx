@@ -16,13 +16,7 @@ import { FeedCard } from '@/src/components/FeedCard';
 import { useAuthStore } from '@/src/stores/authStore';
 import type { FeedItem, PaginatedResponse, UserProfile } from '../../../shared/types';
 
-function ProfileHeader({
-  profile,
-  isOwnProfile,
-}: {
-  profile: UserProfile;
-  isOwnProfile: boolean;
-}) {
+function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnProfile: boolean }) {
   const router = useRouter();
 
   return (
@@ -31,9 +25,7 @@ function ProfileHeader({
         <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
       ) : (
         <View style={styles.avatarFallback}>
-          <Text style={styles.avatarInitial}>
-            {profile.display_name[0]?.toUpperCase() ?? '?'}
-          </Text>
+          <Text style={styles.avatarInitial}>{profile.display_name[0]?.toUpperCase() ?? '?'}</Text>
         </View>
       )}
 
@@ -48,7 +40,8 @@ function ProfileHeader({
               pathname: '/follow-list',
               params: { mode: 'followers', username: profile.username },
             })
-          }>
+          }
+        >
           <Text style={styles.statNumber}>{profile.follower_count}</Text>
           <Text style={styles.statLabel}>Followers</Text>
         </Pressable>
@@ -60,7 +53,8 @@ function ProfileHeader({
               pathname: '/follow-list',
               params: { mode: 'following', username: profile.username },
             })
-          }>
+          }
+        >
           <Text style={styles.statNumber}>{profile.following_count}</Text>
           <Text style={styles.statLabel}>Following</Text>
         </Pressable>
@@ -91,7 +85,12 @@ export default function ProfileScreen() {
     enabled: Boolean(username),
   });
 
-  const { data: ascentsData, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+  const {
+    data: ascentsData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['user-ascents', username],
     queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
       api.get<PaginatedResponse<FeedItem>>(
@@ -129,13 +128,9 @@ export default function ProfileScreen() {
           }
         />
       )}
-      ListHeaderComponent={
-        <ProfileHeader profile={profile} isOwnProfile={isOwnProfile} />
-      }
+      ListHeaderComponent={<ProfileHeader profile={profile} isOwnProfile={isOwnProfile} />}
       ListEmptyComponent={<Text style={styles.empty}>No public ascents yet.</Text>}
-      ListFooterComponent={
-        isFetchingNextPage ? <ActivityIndicator style={styles.loader} /> : null
-      }
+      ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={styles.loader} /> : null}
       onEndReached={() => {
         if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
       }}

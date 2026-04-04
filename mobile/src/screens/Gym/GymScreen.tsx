@@ -1,5 +1,13 @@
 import { lazy, Suspense, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
@@ -21,7 +29,11 @@ export default function GymScreen() {
   const insets = useSafeAreaInsets();
 
   // All gyms (default view before search)
-  const { data: allGyms, isLoading, error } = useQuery({
+  const {
+    data: allGyms,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['gyms'],
     queryFn: () => api.get<{ data: Gym[] }>('/gyms').then((res) => res.data),
   });
@@ -85,33 +97,27 @@ export default function GymScreen() {
             style={({ pressed }) => [styles.filterButton, pressed && { opacity: 0.7 }]}
             hitSlop={8}
           >
-            <MaterialCommunityIcons
-              name="tune-variant"
-              size={24}
-              color={colors.primary}
-            />
+            <MaterialCommunityIcons name="tune-variant" size={24} color={colors.primary} />
           </Pressable>
         </View>
 
         {/* ── Gym cards feed ───────────────────────────────────────────── */}
         <View style={styles.feed}>
-          {isLoadingGyms && (
-            <ActivityIndicator color={colors.primary} style={styles.loader} />
-          )}
-          {error && !searchCoords && (
-            <Text style={styles.errorText}>Failed to load gyms</Text>
-          )}
+          {isLoadingGyms && <ActivityIndicator color={colors.primary} style={styles.loader} />}
+          {error && !searchCoords && <Text style={styles.errorText}>Failed to load gyms</Text>}
           {displayGyms?.length === 0 && !isLoadingGyms && (
-            <Text style={styles.emptyText}>
-              No gyms found nearby. Try a different address.
-            </Text>
+            <Text style={styles.emptyText}>No gyms found nearby. Try a different address.</Text>
           )}
           {displayGyms?.map((gym) => (
             <GymCard
               key={gym.id}
               gym={gym}
               onPress={handleGymPress}
-              distance_km={'distance_km' in gym ? (gym as Gym & { distance_km: number }).distance_km : undefined}
+              distance_km={
+                'distance_km' in gym
+                  ? (gym as Gym & { distance_km: number }).distance_km
+                  : undefined
+              }
             />
           ))}
         </View>

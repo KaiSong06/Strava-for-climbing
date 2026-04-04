@@ -57,9 +57,7 @@ export default function HomeScreen() {
           ) : error ? (
             <Text style={styles.emptyText}>Could not load feed.</Text>
           ) : (
-            <Text style={styles.emptyText}>
-              Follow climbers to see their ascents here.
-            </Text>
+            <Text style={styles.emptyText}>Follow climbers to see their ascents here.</Text>
           )
         }
       />

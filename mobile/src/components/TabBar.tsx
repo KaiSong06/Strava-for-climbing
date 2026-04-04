@@ -8,9 +8,9 @@ export const TAB_BAR_HEIGHT = 72;
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 const ICON_MAP: Record<string, { inactive: IconName; active: IconName }> = {
-  index:   { inactive: 'home-outline',    active: 'home' },
-  search:  { inactive: 'magnify',         active: 'magnify' },
-  gym:     { inactive: 'dumbbell',        active: 'dumbbell' },
+  index: { inactive: 'home-outline', active: 'home' },
+  search: { inactive: 'magnify', active: 'magnify' },
+  gym: { inactive: 'dumbbell', active: 'dumbbell' },
   account: { inactive: 'account-outline', active: 'account' },
 };
 

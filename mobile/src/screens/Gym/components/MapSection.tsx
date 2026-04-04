@@ -1,12 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import {
-  ActivityIndicator,
-  Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import MapView, { Marker, type Region } from 'react-native-maps';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -26,17 +19,11 @@ interface MapSectionProps {
   onSearch: (address: string) => void;
   isSearching: boolean;
   searchError: string | null;
-  gyms: Array<Gym & { distance_km?: number }>;
+  gyms: (Gym & { distance_km?: number })[];
   region: { lat: number; lng: number } | null;
 }
 
-export function MapSection({
-  onSearch,
-  isSearching,
-  searchError,
-  gyms,
-  region,
-}: MapSectionProps) {
+export function MapSection({ onSearch, isSearching, searchError, gyms, region }: MapSectionProps) {
   const mapRef = useRef<MapView>(null);
   const [query, setQuery] = useState('');
 

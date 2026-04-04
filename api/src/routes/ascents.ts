@@ -23,17 +23,28 @@ ascentsRouter.post('/', requireAuth, async (req, res, next) => {
   try {
     const schema = z.object({
       problem_id: z.string().uuid(),
-      user_grade: z.string().max(10).nullish().transform((v) => v ?? null),
-      rating: z.number().int().min(1).max(5).nullish().transform((v) => v ?? null),
-      notes: z.string().max(280).nullish().transform((v) => v ?? null),
+      user_grade: z
+        .string()
+        .max(10)
+        .nullish()
+        .transform((v) => v ?? null),
+      rating: z
+        .number()
+        .int()
+        .min(1)
+        .max(5)
+        .nullish()
+        .transform((v) => v ?? null),
+      notes: z
+        .string()
+        .max(280)
+        .nullish()
+        .transform((v) => v ?? null),
       visibility: z.enum(['public', 'friends', 'private']).default('public'),
     });
     const body = schema.parse(req.body);
 
-    const { rows } = await pool.query(
-      `SELECT id FROM problems WHERE id = $1`,
-      [body.problem_id],
-    );
+    const { rows } = await pool.query(`SELECT id FROM problems WHERE id = $1`, [body.problem_id]);
     if (!rows[0]) throw new AppError('NOT_FOUND', 'Problem not found', 404);
 
     const ascentId = await ascentService.createAscent(req.user!.userId, body.problem_id, {

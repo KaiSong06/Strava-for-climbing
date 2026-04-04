@@ -5,13 +5,20 @@ if (!process.env['REDIS_URL']) {
 }
 
 // Parse redis://[:password@]host[:port][/db] into BullMQ connection options
-function parseRedisUrl(url: string): { host: string; port: number; password?: string; db?: number } {
+function parseRedisUrl(url: string): {
+  host: string;
+  port: number;
+  password?: string;
+  db?: number;
+} {
   const parsed = new URL(url);
   return {
     host: parsed.hostname,
     port: parsed.port ? parseInt(parsed.port, 10) : 6379,
     ...(parsed.password ? { password: decodeURIComponent(parsed.password) } : {}),
-    ...(parsed.pathname && parsed.pathname !== '/' ? { db: parseInt(parsed.pathname.slice(1), 10) } : {}),
+    ...(parsed.pathname && parsed.pathname !== '/'
+      ? { db: parseInt(parsed.pathname.slice(1), 10) }
+      : {}),
   };
 }
 

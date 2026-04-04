@@ -5,7 +5,6 @@ import {
   Image,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -57,15 +56,7 @@ const TYPE_BADGE: Record<AscentType, { label: string; color: string; bg: string 
   attempt: { label: 'Attempt', color: '#1e40af', bg: '#dbeafe' },
 };
 
-function GradeBar({
-  label,
-  count,
-  max,
-}: {
-  label: string;
-  count: number;
-  max: number;
-}) {
+function GradeBar({ label, count, max }: { label: string; count: number; max: number }) {
   const pct = max > 0 ? (count / max) * 100 : 0;
   return (
     <View style={barStyles.row}>
@@ -82,7 +73,11 @@ const barStyles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   label: { width: 36, fontSize: 12, color: '#374151', fontWeight: '600', textAlign: 'right' },
   track: {
-    flex: 1, height: 10, backgroundColor: '#f3f4f6', borderRadius: 5, overflow: 'hidden',
+    flex: 1,
+    height: 10,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 5,
+    overflow: 'hidden',
   },
   fill: { height: '100%', backgroundColor: '#2563eb', borderRadius: 5 },
   count: { width: 24, fontSize: 12, color: '#6b7280', textAlign: 'right' },
@@ -156,9 +151,7 @@ export default function ProblemDetailScreen() {
         <View style={styles.headerInfo}>
           <Text style={styles.grade}>{problem.consensus_grade ?? 'Ungraded'}</Text>
           <Text style={styles.gymName}>{problem.gym_name}</Text>
-          {problem.status === 'retired' && (
-            <Text style={styles.retired}>Retired</Text>
-          )}
+          {problem.status === 'retired' && <Text style={styles.retired}>Retired</Text>}
         </View>
       </View>
 
@@ -194,7 +187,8 @@ export default function ProblemDetailScreen() {
           style={styles.logBtn}
           onPress={() =>
             router.push({ pathname: '/log-ascent/[problemId]', params: { problemId: problem.id } })
-          }>
+          }
+        >
           <Text style={styles.logBtnText}>Log this climb</Text>
         </Pressable>
       )}
@@ -217,7 +211,13 @@ export default function ProblemDetailScreen() {
         return (
           <Pressable
             style={styles.ascentRow}
-            onPress={() => router.push({ pathname: '/profile/[username]', params: { username: item.user.username } })}>
+            onPress={() =>
+              router.push({
+                pathname: '/profile/[username]',
+                params: { username: item.user.username },
+              })
+            }
+          >
             {item.user.avatar_url ? (
               <Image source={{ uri: item.user.avatar_url }} style={styles.avatar} />
             ) : (
@@ -227,25 +227,25 @@ export default function ProblemDetailScreen() {
             )}
             <View style={styles.ascentInfo}>
               <Text style={styles.ascentUser}>{item.user.display_name}</Text>
-              {item.notes ? <Text style={styles.ascentNotes} numberOfLines={2}>{item.notes}</Text> : null}
+              {item.notes ? (
+                <Text style={styles.ascentNotes} numberOfLines={2}>
+                  {item.notes}
+                </Text>
+              ) : null}
             </View>
             <View style={styles.ascentRight}>
               <View style={[styles.badge, { backgroundColor: badge.bg }]}>
                 <Text style={[styles.badgeText, { color: badge.color }]}>{badge.label}</Text>
               </View>
               {item.user_grade && <Text style={styles.ascentGrade}>{item.user_grade}</Text>}
-              {item.rating && (
-                <Text style={styles.ascentRating}>{'★'.repeat(item.rating)}</Text>
-              )}
+              {item.rating && <Text style={styles.ascentRating}>{'★'.repeat(item.rating)}</Text>}
             </View>
           </Pressable>
         );
       }}
       ListHeaderComponent={header}
       ListEmptyComponent={
-        ascentsLoading ? null : (
-          <Text style={styles.emptyText}>No ascents logged yet.</Text>
-        )
+        ascentsLoading ? null : <Text style={styles.emptyText}>No ascents logged yet.</Text>
       }
       ListFooterComponent={
         <>
@@ -276,9 +276,14 @@ const styles = StyleSheet.create({
   grade: { fontSize: 22, fontWeight: '800', color: '#111827' },
   gymName: { fontSize: 14, color: '#6b7280' },
   retired: {
-    fontSize: 11, fontWeight: '700', color: '#9ca3af',
-    backgroundColor: '#f3f4f6', paddingHorizontal: 6, paddingVertical: 2,
-    borderRadius: 4, alignSelf: 'flex-start',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#9ca3af',
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
   },
 
   statsRow: {
@@ -326,8 +331,12 @@ const styles = StyleSheet.create({
   },
   avatar: { width: 36, height: 36, borderRadius: 18 },
   avatarFallback: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: '#2563eb', alignItems: 'center', justifyContent: 'center',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#2563eb',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatarInitial: { color: '#fff', fontSize: 14, fontWeight: '700' },
   ascentInfo: { flex: 1 },

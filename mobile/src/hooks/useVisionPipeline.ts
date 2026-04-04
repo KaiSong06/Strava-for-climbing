@@ -27,11 +27,7 @@ export function useVisionPipeline() {
   const activeRef = useRef(false);
 
   const submit = useCallback(
-    async (
-      photos: Array<{ uri: string }>,
-      colour: string,
-      gymId: string,
-    ): Promise<void> => {
+    async (photos: { uri: string }[], colour: string, gymId: string): Promise<void> => {
       activeRef.current = true;
       setStatus('uploading');
       setUploadProgress(0);

@@ -135,12 +135,11 @@ export default function RegisterScreen() {
         </View>
         <KeyboardAvoidingView
           style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <View style={styles.container}>
             <Text style={styles.title}>Verify your phone</Text>
-            <Text style={styles.subtitle}>
-              We sent a 6-digit code to {fullPhone}
-            </Text>
+            <Text style={styles.subtitle}>We sent a 6-digit code to {fullPhone}</Text>
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -158,7 +157,8 @@ export default function RegisterScreen() {
             <Pressable
               style={[styles.button, loading && styles.buttonDisabled]}
               onPress={handleVerifyOtp}
-              disabled={loading}>
+              disabled={loading}
+            >
               {loading ? (
                 <ActivityIndicator color={colors.onPrimary} />
               ) : (
@@ -183,7 +183,8 @@ export default function RegisterScreen() {
       </View>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>Create your account</Text>
 
@@ -231,7 +232,8 @@ export default function RegisterScreen() {
           <Pressable
             style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleSignUp}
-            disabled={loading}>
+            disabled={loading}
+          >
             {loading ? (
               <ActivityIndicator color={colors.onPrimary} />
             ) : (
@@ -254,9 +256,24 @@ const styles = StyleSheet.create({
   wordmark: { ...typography.headlineMd, color: colors.primary },
   flex: { flex: 1 },
   container: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl, gap: spacing.md },
-  title: { ...typography.headlineMd, color: colors.onSurface, marginBottom: spacing.sm, textAlign: 'center' },
-  subtitle: { ...typography.bodyMd, color: colors.onSurfaceVariant, textAlign: 'center', marginBottom: spacing.xs },
-  error: { ...typography.bodyMd, color: colors.error, textAlign: 'center', marginBottom: spacing.xs },
+  title: {
+    ...typography.headlineMd,
+    color: colors.onSurface,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  subtitle: {
+    ...typography.bodyMd,
+    color: colors.onSurfaceVariant,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  error: {
+    ...typography.bodyMd,
+    color: colors.error,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
   input: {
     ...typography.bodyLg,
     borderRadius: 12,

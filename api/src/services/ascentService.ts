@@ -48,7 +48,16 @@ export async function createAscent(
     `INSERT INTO ascents (user_id, problem_id, type, user_grade, rating, notes, video_url, visibility)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING id`,
-    [userId, problemId, type, input.user_grade, input.rating, input.notes, input.video_url, input.visibility],
+    [
+      userId,
+      problemId,
+      type,
+      input.user_grade,
+      input.rating,
+      input.notes,
+      input.video_url,
+      input.visibility,
+    ],
   );
   if (!rows[0]) throw new AppError('INTERNAL_ERROR', 'Failed to create ascent', 500);
   return rows[0].id;
@@ -56,10 +65,18 @@ export async function createAscent(
 
 export async function getAscentById(ascentId: string): Promise<AscentWithDetails> {
   type Row = {
-    id: string; type: string; user_grade: string | null; rating: number | null;
-    notes: string | null; visibility: string; logged_at: string;
-    problem_id: string; colour: string; consensus_grade: string | null;
-    gym_id: string; gym_name: string;
+    id: string;
+    type: string;
+    user_grade: string | null;
+    rating: number | null;
+    notes: string | null;
+    visibility: string;
+    logged_at: string;
+    problem_id: string;
+    colour: string;
+    consensus_grade: string | null;
+    gym_id: string;
+    gym_name: string;
   };
 
   const { rows } = await pool.query<Row>(

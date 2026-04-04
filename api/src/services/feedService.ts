@@ -180,9 +180,7 @@ export async function getDiscoverFeed(
     whereExtra = `AND a.user_id != $${params.length}`;
   }
 
-  const cursorExtra = cursor
-    ? (params.push(cursor), cursorClause(params.length))
-    : '';
+  const cursorExtra = cursor ? (params.push(cursor), cursorClause(params.length)) : '';
 
   const { rows } = await pool.query<FeedRow>(
     `SELECT ${FEED_COLS}

@@ -30,7 +30,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   initialize: async () => {
     // Get existing session from SecureStore (via Supabase client)
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     set({
       session,
       accessToken: session?.access_token ?? null,
@@ -52,8 +54,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   updateUser: (user) => set({ user }),
 
-  setPendingVerification: (phone) =>
-    set({ pendingVerification: phone ? { phone } : null }),
+  setPendingVerification: (phone) => set({ pendingVerification: phone ? { phone } : null }),
 
   logout: async () => {
     unregisterPushNotifications().catch(() => {});

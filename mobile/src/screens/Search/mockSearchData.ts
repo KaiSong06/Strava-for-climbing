@@ -23,4 +23,3 @@ export interface DiscoveryTile {
     achievement: string;
   };
 }
-

@@ -128,7 +128,8 @@ export default function GymScreen() {
           <Pressable
             key={tab}
             style={[styles.tab, activeTab === tab && styles.tabActive]}
-            onPress={() => setActiveTab(tab)}>
+            onPress={() => setActiveTab(tab)}
+          >
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
               {tab === 'current' ? 'Current problems' : 'Past problems'}
             </Text>
@@ -174,7 +175,9 @@ export default function GymScreen() {
             <Text style={styles.emptyText}>No active problems at this gym.</Text>
           )
         }
-        ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={styles.loader} /> : null}
+        ListFooterComponent={
+          isFetchingNextPage ? <ActivityIndicator style={styles.loader} /> : null
+        }
         onEndReached={onEndReached}
         onEndReachedThreshold={0.3}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
@@ -206,9 +209,7 @@ export default function GymScreen() {
     <SectionList
       sections={retiredGroups.map((g) => ({ title: formatMonth(g.month), data: [g.problems] }))}
       keyExtractor={(_, i) => String(i)}
-      renderSectionHeader={({ section }) => (
-        <Text style={styles.monthHeader}>{section.title}</Text>
-      )}
+      renderSectionHeader={({ section }) => <Text style={styles.monthHeader}>{section.title}</Text>}
       renderItem={({ item: monthProblems }) => {
         const numCols = 2;
         const rows: GymProblem[][] = [];
@@ -228,9 +229,7 @@ export default function GymScreen() {
                     total_sends={p.total_sends}
                     flash_count={p.flash_count}
                     retired
-                    onPress={() =>
-                      router.push({ pathname: '/problem/[id]', params: { id: p.id } })
-                    }
+                    onPress={() => router.push({ pathname: '/problem/[id]', params: { id: p.id } })}
                   />
                 ))}
                 {row.length < numCols && <View style={{ flex: 1, margin: 4 }} />}

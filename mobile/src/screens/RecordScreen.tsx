@@ -36,20 +36,37 @@ import { spacing } from '@/src/theme/spacing';
 const MAX_PHOTOS = 5;
 
 const HOLD_COLOURS = [
-  { label: 'Red',    hex: '#ef4444' },
-  { label: 'Blue',   hex: '#3b82f6' },
-  { label: 'Green',  hex: '#22c55e' },
+  { label: 'Red', hex: '#ef4444' },
+  { label: 'Blue', hex: '#3b82f6' },
+  { label: 'Green', hex: '#22c55e' },
   { label: 'Yellow', hex: '#eab308' },
-  { label: 'Black',  hex: '#1f2937' },
+  { label: 'Black', hex: '#1f2937' },
   { label: 'Orange', hex: '#f97316' },
   { label: 'Purple', hex: '#a855f7' },
-  { label: 'White',  hex: '#f9fafb' },
-  { label: 'Pink',   hex: '#ec4899' },
+  { label: 'White', hex: '#f9fafb' },
+  { label: 'Pink', hex: '#ec4899' },
 ];
 
 const GRADES = [
-  'VB', 'V0', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8',
-  'V9', 'V10', 'V11', 'V12', 'V13', 'V14', 'V15', 'V16', 'V17',
+  'VB',
+  'V0',
+  'V1',
+  'V2',
+  'V3',
+  'V4',
+  'V5',
+  'V6',
+  'V7',
+  'V8',
+  'V9',
+  'V10',
+  'V11',
+  'V12',
+  'V13',
+  'V14',
+  'V15',
+  'V16',
+  'V17',
 ];
 
 const PROJECTS = [
@@ -64,14 +81,14 @@ const PROCESSING_MESSAGES = ['Analysing holds…', 'Matching problem…', 'Almos
 
 export default function RecordScreen() {
   // Form state
-  const [project, setProject]       = useState<string | null>(null);
-  const [photos, setPhotos]         = useState<Array<{ uri: string }>>([]);
-  const [holdColor, setHoldColor]   = useState<string | null>(null);
+  const [project, setProject] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<{ uri: string }[]>([]);
+  const [holdColor, setHoldColor] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState<string | null>(null);
 
   // Modal visibility
-  const [projectPickerVisible,    setProjectPickerVisible]    = useState(false);
-  const [colorPickerVisible,      setColorPickerVisible]      = useState(false);
+  const [projectPickerVisible, setProjectPickerVisible] = useState(false);
+  const [colorPickerVisible, setColorPickerVisible] = useState(false);
   const [difficultyPickerVisible, setDifficultyPickerVisible] = useState(false);
 
   // Processing message cycling
@@ -91,12 +108,8 @@ export default function RecordScreen() {
     reset: resetPipeline,
   } = useVisionPipeline();
 
-  const {
-    matchedProblemId,
-    confidence,
-    needsConfirmation,
-    isAutoMatched,
-  } = useMatchResult(pipelineResult);
+  const { matchedProblemId, confidence, needsConfirmation, isAutoMatched } =
+    useMatchResult(pipelineResult);
 
   const showOverlay = pipelineStatus === 'uploading' || pipelineStatus === 'processing';
   const showResult = pipelineStatus === 'matched' || pipelineStatus === 'awaiting_confirmation';
@@ -142,11 +155,9 @@ export default function RecordScreen() {
 
   useEffect(() => {
     if (pipelineStatus !== 'failed') return;
-    Alert.alert(
-      'Upload failed',
-      pipelineError ?? 'Something went wrong. Please try again.',
-      [{ text: 'Try Again', onPress: resetPipeline }],
-    );
+    Alert.alert('Upload failed', pipelineError ?? 'Something went wrong. Please try again.', [
+      { text: 'Try Again', onPress: resetPipeline },
+    ]);
   }, [pipelineStatus, pipelineError, resetPipeline]);
 
   // ── Confirmed success ──────────────────────────────────────────────────────
@@ -242,7 +253,9 @@ export default function RecordScreen() {
           <Text style={styles.sectionLabel}>Project</Text>
           <Pressable style={styles.pickerRow} onPress={() => setProjectPickerVisible(true)}>
             <Text style={[styles.pickerText, !project && styles.pickerPlaceholder]}>
-              {project ? (PROJECTS.find((p) => p.id === project)?.label ?? 'Unknown') : 'Select Project'}
+              {project
+                ? (PROJECTS.find((p) => p.id === project)?.label ?? 'Unknown')
+                : 'Select Project'}
             </Text>
             <MaterialCommunityIcons name="chevron-down" size={20} color={colors.onSurfaceVariant} />
           </Pressable>
@@ -276,8 +289,15 @@ export default function RecordScreen() {
               >
                 {photos.map((photo, index) => (
                   <View key={photo.uri} style={styles.photoThumb}>
-                    <Image source={{ uri: photo.uri }} style={styles.photoThumbImage} resizeMode="cover" />
-                    <Pressable style={styles.photoRemoveButton} onPress={() => handleRemovePhoto(index)}>
+                    <Image
+                      source={{ uri: photo.uri }}
+                      style={styles.photoThumbImage}
+                      resizeMode="cover"
+                    />
+                    <Pressable
+                      style={styles.photoRemoveButton}
+                      onPress={() => handleRemovePhoto(index)}
+                    >
                       <MaterialCommunityIcons name="close" size={14} color={colors.onSurface} />
                     </Pressable>
                   </View>
@@ -288,7 +308,9 @@ export default function RecordScreen() {
                   </Pressable>
                 )}
               </ScrollView>
-              <Text style={styles.photoCounter}>{photos.length}/{MAX_PHOTOS} photos</Text>
+              <Text style={styles.photoCounter}>
+                {photos.length}/{MAX_PHOTOS} photos
+              </Text>
             </View>
           )}
 
@@ -364,7 +386,11 @@ export default function RecordScreen() {
             </View>
           ) : needsConfirmation ? (
             <View style={styles.resultContent}>
-              <MaterialCommunityIcons name="help-circle-outline" size={56} color={colors.tertiary} />
+              <MaterialCommunityIcons
+                name="help-circle-outline"
+                size={56}
+                color={colors.tertiary}
+              />
               <Text style={styles.resultHeading}>Is this your climb?</Text>
               {confidence !== null && (
                 <View style={styles.confidenceBadge}>
@@ -377,7 +403,7 @@ export default function RecordScreen() {
                 </Pressable>
               ) : null}
               <Pressable style={styles.resultButtonSecondary} onPress={handleNewProblem}>
-                <Text style={styles.resultButtonSecondaryText}>No, it's a new problem</Text>
+                <Text style={styles.resultButtonSecondaryText}>No, it&apos;s a new problem</Text>
               </Pressable>
             </View>
           ) : null}
@@ -449,7 +475,12 @@ export default function RecordScreen() {
               >
                 <View style={styles.modalRowLeft}>
                   <View style={[styles.colorDot, { backgroundColor: color.hex }]} />
-                  <Text style={[styles.modalRowText, holdColor === color.hex && styles.modalRowActiveText]}>
+                  <Text
+                    style={[
+                      styles.modalRowText,
+                      holdColor === color.hex && styles.modalRowActiveText,
+                    ]}
+                  >
                     {color.label}
                   </Text>
                 </View>
@@ -483,7 +514,9 @@ export default function RecordScreen() {
                     setDifficultyPickerVisible(false);
                   }}
                 >
-                  <Text style={[styles.modalRowText, difficulty === item && styles.modalRowActiveText]}>
+                  <Text
+                    style={[styles.modalRowText, difficulty === item && styles.modalRowActiveText]}
+                  >
                     {item}
                   </Text>
                   {difficulty === item && (
@@ -504,7 +537,7 @@ export default function RecordScreen() {
 const styles = StyleSheet.create({
   // Layout
   container: { flex: 1, backgroundColor: colors.background },
-  flex:      { flex: 1 },
+  flex: { flex: 1 },
   scrollContent: {
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xl,

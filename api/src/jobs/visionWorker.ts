@@ -17,7 +17,9 @@ const VISION_SERVICE_URL = process.env['VISION_SERVICE_URL'];
 
 // Mirror the thresholds from CLAUDE.md / vision/.env
 const SIMILARITY_THRESHOLD_AUTO = parseFloat(process.env['SIMILARITY_THRESHOLD_AUTO'] ?? '0.92');
-const SIMILARITY_THRESHOLD_CONFIRM = parseFloat(process.env['SIMILARITY_THRESHOLD_CONFIRM'] ?? '0.75');
+const SIMILARITY_THRESHOLD_CONFIRM = parseFloat(
+  process.env['SIMILARITY_THRESHOLD_CONFIRM'] ?? '0.75',
+);
 
 interface VisionResult {
   hold_vector: number[];
@@ -59,10 +61,10 @@ const worker = new Worker<VisionJobData>(
     const result = (await response.json()) as VisionResult;
 
     // ── 3. Persist hold_vector on the upload row ─────────────────────────────
-    await pool.query(
-      `UPDATE uploads SET hold_vector = $2::jsonb WHERE id = $1`,
-      [uploadId, JSON.stringify(result.hold_vector)],
-    );
+    await pool.query(`UPDATE uploads SET hold_vector = $2::jsonb WHERE id = $1`, [
+      uploadId,
+      JSON.stringify(result.hold_vector),
+    ]);
 
     // ── 4. pgvector cosine similarity search ────────────────────────────────
     // Pre-filter by gym_id + colour before ANN (shrinks candidate set, keeps index fast).
@@ -91,9 +93,16 @@ const worker = new Worker<VisionJobData>(
          WHERE id = $1`,
         [uploadId, topScore, topProblemId],
       );
-      console.log(`[vision] auto-matched upload ${uploadId} → problem ${topProblemId} (score=${topScore.toFixed(3)})`);
+      console.log(
+        `[vision] auto-matched upload ${uploadId} → problem ${topProblemId} (score=${topScore.toFixed(3)})`,
+      );
       if (userId) {
-        pushService.sendToUser(userId, 'Climb identified!', 'Tap to log your ascent.', { uploadId, type: 'vision_complete' }).catch(() => {});
+        pushService
+          .sendToUser(userId, 'Climb identified!', 'Tap to log your ascent.', {
+            uploadId,
+            type: 'vision_complete',
+          })
+          .catch(() => {});
       }
     } else {
       // Confirm or new problem — mobile polls status and shows confirmation UI.
@@ -109,7 +118,12 @@ const worker = new Worker<VisionJobData>(
       const label = topScore >= SIMILARITY_THRESHOLD_CONFIRM ? 'confirm-needed' : 'new-problem';
       console.log(`[vision] ${label} upload ${uploadId} (score=${topScore.toFixed(3)})`);
       if (userId) {
-        pushService.sendToUser(userId, 'Review your climb', 'We found a possible match — tap to confirm.', { uploadId, type: 'vision_complete' }).catch(() => {});
+        pushService
+          .sendToUser(userId, 'Review your climb', 'We found a possible match — tap to confirm.', {
+            uploadId,
+            type: 'vision_complete',
+          })
+          .catch(() => {});
       }
     }
   },
@@ -120,7 +134,9 @@ worker.on('failed', async (job, err) => {
   console.error(`[vision] job ${job?.id ?? '?'} failed:`, err.message);
   if (job?.data.uploadId) {
     const { rows } = await pool
-      .query<{ user_id: string }>(
+      .query<{
+        user_id: string;
+      }>(
         `UPDATE uploads SET processing_status = 'failed'::processing_status WHERE id = $1 RETURNING user_id`,
         [job.data.uploadId],
       )
@@ -130,7 +146,12 @@ worker.on('failed', async (job, err) => {
       });
     const userId = rows[0]?.user_id;
     if (userId) {
-      pushService.sendToUser(userId, 'Upload failed', 'Photo processing failed. Please try again.', { uploadId: job.data.uploadId, type: 'vision_failed' }).catch(() => {});
+      pushService
+        .sendToUser(userId, 'Upload failed', 'Photo processing failed. Please try again.', {
+          uploadId: job.data.uploadId,
+          type: 'vision_failed',
+        })
+        .catch(() => {});
     }
   }
 });
