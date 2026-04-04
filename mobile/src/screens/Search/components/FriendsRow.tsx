@@ -3,7 +3,7 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
-import type { FriendEntry } from '../mockSearchData';
+import type { FriendEntry } from '../searchTypes';
 
 interface FriendsRowProps {
   friends: FriendEntry[];

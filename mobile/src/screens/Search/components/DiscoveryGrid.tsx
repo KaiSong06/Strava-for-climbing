@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
-import type { DiscoveryTile } from '../mockSearchData';
+import type { DiscoveryTile } from '../searchTypes';
 
 interface DiscoveryGridProps {
   tiles: DiscoveryTile[];

@@ -7,7 +7,7 @@ import { SearchHeader, SEARCH_HEADER_CONTENT_HEIGHT } from './components/SearchH
 import { FriendsRow } from './components/FriendsRow';
 import { DiscoveryGrid } from './components/DiscoveryGrid';
 import { useFriends, useDiscoverFeed } from '@/src/hooks/useSearchData';
-import type { FriendEntry, DiscoveryTile } from './mockSearchData';
+import type { FriendEntry, DiscoveryTile } from './searchTypes';
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
