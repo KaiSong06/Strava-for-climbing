@@ -72,10 +72,17 @@ export async function getProblemWithGym(problemId: string): Promise<ProblemWithG
 
 export async function getProblemDetail(problemId: string): Promise<ProblemDetail> {
   type Row = {
-    id: string; gym_id: string; colour: string; status: string;
-    consensus_grade: string | null; total_sends: number;
-    first_upload_at: string; retired_at: string | null;
-    gym_name: string; total_attempts: number; flash_count: number;
+    id: string;
+    gym_id: string;
+    colour: string;
+    status: string;
+    consensus_grade: string | null;
+    total_sends: number;
+    first_upload_at: string;
+    retired_at: string | null;
+    gym_name: string;
+    total_attempts: number;
+    flash_count: number;
   };
 
   const { rows } = await pool.query<Row>(
@@ -140,9 +147,7 @@ export async function calculateConsensusGrade(problemId: string): Promise<void> 
   );
   if (rows.length === 0) return;
 
-  const sorted = rows
-    .map((r) => r.user_grade)
-    .sort((a, b) => parseVGrade(a) - parseVGrade(b));
+  const sorted = rows.map((r) => r.user_grade).sort((a, b) => parseVGrade(a) - parseVGrade(b));
   const median = sorted[Math.floor(sorted.length / 2)]!;
 
   await pool.query(`UPDATE problems SET consensus_grade = $1 WHERE id = $2`, [median, problemId]);

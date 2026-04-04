@@ -60,7 +60,8 @@ export default function LoginScreen() {
       </View>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <View style={styles.container}>
           <Text style={styles.title}>Sign in to Crux</Text>
 
@@ -89,7 +90,8 @@ export default function LoginScreen() {
           <Pressable
             style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleLogin}
-            disabled={loading}>
+            disabled={loading}
+          >
             {loading ? (
               <ActivityIndicator color={colors.onPrimary} />
             ) : (
@@ -98,7 +100,7 @@ export default function LoginScreen() {
           </Pressable>
 
           <Link href="/(auth)/register" style={styles.link}>
-            <Text style={styles.linkText}>Don't have an account? Register</Text>
+            <Text style={styles.linkText}>Don&apos;t have an account? Register</Text>
           </Link>
         </View>
       </KeyboardAvoidingView>
@@ -112,8 +114,18 @@ const styles = StyleSheet.create({
   wordmark: { ...typography.headlineMd, color: colors.primary },
   flex: { flex: 1 },
   container: { flex: 1, justifyContent: 'center', padding: spacing.xl, gap: spacing.md },
-  title: { ...typography.headlineMd, color: colors.onSurface, marginBottom: spacing.sm, textAlign: 'center' },
-  error: { ...typography.bodyMd, color: colors.error, textAlign: 'center', marginBottom: spacing.xs },
+  title: {
+    ...typography.headlineMd,
+    color: colors.onSurface,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  error: {
+    ...typography.bodyMd,
+    color: colors.error,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
   input: {
     ...typography.bodyLg,
     borderRadius: 12,

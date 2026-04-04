@@ -10,12 +10,12 @@ interface DiscoveryGridProps {
   onTilePress?: (tile: DiscoveryTile) => void;
 }
 
-const GAP = spacing.sm;             // 8px gap between tiles
-const SIDE_PADDING = spacing.lg;    // matches content padding in ScrollView (16px each side)
+const GAP = spacing.sm; // 8px gap between tiles
+const SIDE_PADDING = spacing.lg; // matches content padding in ScrollView (16px each side)
 const SCREEN_W = Dimensions.get('window').width;
 const GRID_W = SCREEN_W - SIDE_PADDING * 2;
 const COL = (GRID_W - GAP * 2) / 3; // width of 1 column
-const COL2 = COL * 2 + GAP;         // width of 2 columns
+const COL2 = COL * 2 + GAP; // width of 2 columns
 
 /**
  * Bento grid matching the mockup layout:
@@ -36,14 +36,13 @@ const COL2 = COL * 2 + GAP;         // width of 2 columns
  */
 export function DiscoveryGrid({ tiles, onTilePress }: DiscoveryGridProps) {
   const featured = tiles.find((t) => t.type === 'featured_climb');
-  const gymSpot  = tiles.find((t) => t.type === 'gym_spotlight');
+  const gymSpot = tiles.find((t) => t.type === 'gym_spotlight');
   const tallVideo = tiles.find((t) => t.type === 'tall_video');
-  const athlete  = tiles.find((t) => t.type === 'featured_athlete');
+  const athlete = tiles.find((t) => t.type === 'featured_athlete');
   const standards = tiles.filter((t) => t.type === 'standard');
 
   return (
     <View style={styles.grid}>
-
       {/* ── Row group A ─────────────────────────────────────────────── */}
       <View style={[styles.row, { height: COL2 }]}>
         {/* Featured 2×2 */}
@@ -102,7 +101,6 @@ export function DiscoveryGrid({ tiles, onTilePress }: DiscoveryGridProps) {
 
       {/* ── Row group B ─────────────────────────────────────────────── */}
       <View style={[styles.row, { height: COL2, marginTop: GAP }]}>
-
         {/* Left 2 cols: 2×2 of standard tiles (with gap in bottom-right) */}
         <View style={[styles.col, { width: COL2, height: COL2 }]}>
           {/* Top row: 2 standards */}
@@ -191,7 +189,6 @@ export function DiscoveryGrid({ tiles, onTilePress }: DiscoveryGridProps) {
           </Pressable>
         ))}
       </View>
-
     </View>
   );
 }

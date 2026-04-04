@@ -43,7 +43,11 @@ export default function AccountScreen() {
 
   const accessToken = useAuthStore((s) => s.accessToken);
 
-  const { data: profile, isLoading, error } = useQuery<AuthUser>({
+  const {
+    data: profile,
+    isLoading,
+    error,
+  } = useQuery<AuthUser>({
     queryKey: ['users', 'me'],
     queryFn: () => api.get<AuthUser>('/users/me'),
     enabled: !!accessToken,
@@ -52,9 +56,7 @@ export default function AccountScreen() {
   const { data: ascentsPage } = useQuery<PaginatedResponse<FeedItem>>({
     queryKey: ['users', profile?.username, 'ascents'],
     queryFn: () =>
-      api.get<PaginatedResponse<FeedItem>>(
-        `/users/${profile!.username}/ascents?limit=5`,
-      ),
+      api.get<PaginatedResponse<FeedItem>>(`/users/${profile!.username}/ascents?limit=5`),
     enabled: !!profile?.username,
   });
 

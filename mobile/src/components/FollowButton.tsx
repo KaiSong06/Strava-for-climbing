@@ -40,7 +40,8 @@ export function FollowButton({ username, userId }: FollowButtonProps) {
     <Pressable
       style={[styles.button, following ? styles.following : styles.follow]}
       onPress={handlePress}
-      disabled={isPending}>
+      disabled={isPending}
+    >
       {isPending ? (
         <ActivityIndicator size="small" color={following ? '#374151' : '#fff'} />
       ) : (

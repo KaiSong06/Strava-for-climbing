@@ -16,9 +16,15 @@ disputesRouter.post('/:disputeId/vote', requireAuth, async (req, res, next) => {
 
     // Get dispute + upload + problem
     const { rows: disputeRows } = await pool.query<{
-      id: string; status: string; votes_confirm: number; votes_split: number;
-      upload_id: string; problem_id: string | null;
-      gym_id: string | null; colour: string | null; hold_vector: number[] | null;
+      id: string;
+      status: string;
+      votes_confirm: number;
+      votes_split: number;
+      upload_id: string;
+      problem_id: string | null;
+      gym_id: string | null;
+      colour: string | null;
+      hold_vector: number[] | null;
     }>(
       `SELECT d.id, d.status, d.votes_confirm, d.votes_split,
               d.upload_id, u.problem_id, u.gym_id, u.colour,
@@ -49,7 +55,8 @@ disputesRouter.post('/:disputeId/vote', requireAuth, async (req, res, next) => {
     // Increment the relevant vote counter
     const voteCol = vote === 'confirm' ? 'votes_confirm' : 'votes_split';
     const { rows: updated } = await pool.query<{
-      votes_confirm: number; votes_split: number;
+      votes_confirm: number;
+      votes_split: number;
     }>(
       `UPDATE match_disputes SET ${voteCol} = ${voteCol} + 1 WHERE id = $1
        RETURNING votes_confirm, votes_split`,
@@ -70,21 +77,19 @@ disputesRouter.post('/:disputeId/vote', requireAuth, async (req, res, next) => {
             dispute.colour,
             holdVector,
           );
-          await pool.query(
-            `UPDATE uploads SET problem_id = $1 WHERE id = $2`,
-            [newProblemId, dispute.upload_id],
-          );
+          await pool.query(`UPDATE uploads SET problem_id = $1 WHERE id = $2`, [
+            newProblemId,
+            dispute.upload_id,
+          ]);
         }
-        await pool.query(
-          `UPDATE match_disputes SET status = 'resolved_split' WHERE id = $1`,
-          [disputeId],
-        );
+        await pool.query(`UPDATE match_disputes SET status = 'resolved_split' WHERE id = $1`, [
+          disputeId,
+        ]);
         newStatus = 'resolved_split';
       } else if (votes_confirm > votes_split) {
-        await pool.query(
-          `UPDATE match_disputes SET status = 'resolved_confirm' WHERE id = $1`,
-          [disputeId],
-        );
+        await pool.query(`UPDATE match_disputes SET status = 'resolved_confirm' WHERE id = $1`, [
+          disputeId,
+        ]);
         newStatus = 'resolved_confirm';
       }
     }

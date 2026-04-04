@@ -56,9 +56,7 @@ export function AscentPostCard({ item }: { item: AscentPostData }) {
             <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
           ) : (
             <View style={[styles.avatar, styles.avatarFallback]}>
-              <Text style={styles.avatarInitial}>
-                {item.display_name[0]?.toUpperCase() ?? '?'}
-              </Text>
+              <Text style={styles.avatarInitial}>{item.display_name[0]?.toUpperCase() ?? '?'}</Text>
             </View>
           )}
           <View>
@@ -71,7 +69,11 @@ export function AscentPostCard({ item }: { item: AscentPostData }) {
           hitSlop={8}
           style={({ pressed }) => pressed && styles.pressed}
         >
-          <MaterialCommunityIcons name="dots-horizontal" size={24} color={colors.onSurfaceVariant} />
+          <MaterialCommunityIcons
+            name="dots-horizontal"
+            size={24}
+            color={colors.onSurfaceVariant}
+          />
         </Pressable>
       </View>
 
@@ -97,21 +99,33 @@ export function AscentPostCard({ item }: { item: AscentPostData }) {
               onPress={() => console.log('Like pressed')}
               style={({ pressed }) => pressed && styles.pressed}
             >
-              <MaterialCommunityIcons name="heart-outline" size={24} color={colors.onSurfaceVariant} />
+              <MaterialCommunityIcons
+                name="heart-outline"
+                size={24}
+                color={colors.onSurfaceVariant}
+              />
             </Pressable>
 
             <Pressable
               onPress={() => console.log('Comments pressed')}
               style={({ pressed }) => pressed && styles.pressed}
             >
-              <MaterialCommunityIcons name="chat-outline" size={24} color={colors.onSurfaceVariant} />
+              <MaterialCommunityIcons
+                name="chat-outline"
+                size={24}
+                color={colors.onSurfaceVariant}
+              />
             </Pressable>
 
             <Pressable
               onPress={() => console.log('Share pressed')}
               style={({ pressed }) => pressed && styles.pressed}
             >
-              <MaterialCommunityIcons name="share-outline" size={24} color={colors.onSurfaceVariant} />
+              <MaterialCommunityIcons
+                name="share-outline"
+                size={24}
+                color={colors.onSurfaceVariant}
+              />
             </Pressable>
           </View>
 
@@ -119,7 +133,11 @@ export function AscentPostCard({ item }: { item: AscentPostData }) {
             onPress={() => console.log('Bookmark pressed')}
             style={({ pressed }) => pressed && styles.pressed}
           >
-            <MaterialCommunityIcons name="bookmark-outline" size={24} color={colors.onSurfaceVariant} />
+            <MaterialCommunityIcons
+              name="bookmark-outline"
+              size={24}
+              color={colors.onSurfaceVariant}
+            />
           </Pressable>
         </View>
 

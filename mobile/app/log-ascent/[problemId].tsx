@@ -19,9 +19,24 @@ interface ProblemSummary {
   gym_name: string;
 }
 
-const GRADES = ['VB', 'V0', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10', 'V11', 'V12'];
+const GRADES = [
+  'VB',
+  'V0',
+  'V1',
+  'V2',
+  'V3',
+  'V4',
+  'V5',
+  'V6',
+  'V7',
+  'V8',
+  'V9',
+  'V10',
+  'V11',
+  'V12',
+];
 const VISIBILITY = ['public', 'friends', 'private'] as const;
-type Visibility = typeof VISIBILITY[number];
+type Visibility = (typeof VISIBILITY)[number];
 
 export default function LogAscentScreen() {
   const { problemId } = useLocalSearchParams<{ problemId: string }>();
@@ -85,7 +100,8 @@ export default function LogAscentScreen() {
             <Pressable
               key={g}
               style={[styles.gradeChip, grade === g && styles.gradeChipSelected]}
-              onPress={() => setGrade(g === grade ? null : g)}>
+              onPress={() => setGrade(g === grade ? null : g)}
+            >
               <Text style={[styles.gradeChipText, grade === g && styles.gradeChipTextSelected]}>
                 {g}
               </Text>
@@ -121,7 +137,8 @@ export default function LogAscentScreen() {
           <Pressable
             key={v}
             style={[styles.visChip, visibility === v && styles.visChipSelected]}
-            onPress={() => setVisibility(v)}>
+            onPress={() => setVisibility(v)}
+          >
             <Text style={[styles.visChipText, visibility === v && styles.visChipTextSelected]}>
               {v.charAt(0).toUpperCase() + v.slice(1)}
             </Text>
@@ -134,7 +151,8 @@ export default function LogAscentScreen() {
       <Pressable
         style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
         onPress={handleSubmit}
-        disabled={submitting}>
+        disabled={submitting}
+      >
         {submitting ? (
           <ActivityIndicator color="#fff" />
         ) : (

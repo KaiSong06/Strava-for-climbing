@@ -57,10 +57,9 @@ export async function getMe(userId: string): Promise<AuthUser> {
 }
 
 export async function getByUsername(username: string): Promise<UserProfile> {
-  const { rows } = await pool.query<UserProfile>(
-    `${PROFILE_SELECT} WHERE u.username = $1`,
-    [username],
-  );
+  const { rows } = await pool.query<UserProfile>(`${PROFILE_SELECT} WHERE u.username = $1`, [
+    username,
+  ]);
   if (!rows[0]) throw new AppError('NOT_FOUND', 'User not found', 404);
   return rows[0];
 }
@@ -89,14 +88,18 @@ export async function updateMe(userId: string, input: UpdateMeInput): Promise<Au
       throw new AppError('USERNAME_TAKEN', 'Username is already taken', 409);
     }
 
-    const { rows: [me] } = await pool.query<{ username: string; username_changed_at: string | null }>(
+    const {
+      rows: [me],
+    } = await pool.query<{ username: string; username_changed_at: string | null }>(
       `SELECT username, username_changed_at FROM users WHERE id = $1`,
       [userId],
     );
     if (me && input.username !== me.username) {
       if (me.username_changed_at) {
         const changedAt = new Date(me.username_changed_at);
-        const cooldownEnd = new Date(changedAt.getTime() + USERNAME_COOLDOWN_DAYS * 24 * 60 * 60 * 1000);
+        const cooldownEnd = new Date(
+          changedAt.getTime() + USERNAME_COOLDOWN_DAYS * 24 * 60 * 60 * 1000,
+        );
         if (new Date() < cooldownEnd) {
           throw new AppError(
             'USERNAME_COOLDOWN',

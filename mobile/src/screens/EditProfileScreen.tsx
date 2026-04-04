@@ -140,7 +140,8 @@ export default function EditProfileScreen() {
       if (usernameChanged) body.username = username;
       if (homeGymId !== user?.home_gym_id) body.home_gym_id = homeGymId;
       if (avatarBase64) body.avatar_base64 = avatarBase64;
-      if (defaultVisibility !== user?.default_visibility) body.default_visibility = defaultVisibility;
+      if (defaultVisibility !== user?.default_visibility)
+        body.default_visibility = defaultVisibility;
 
       if (Object.keys(body).length === 0) {
         router.back();
@@ -240,9 +241,7 @@ export default function EditProfileScreen() {
               </Text>
             )}
             {!usernameLocked && (
-              <Text style={styles.hint}>
-                Letters, numbers, and underscores. 3–20 characters.
-              </Text>
+              <Text style={styles.hint}>Letters, numbers, and underscores. 3–20 characters.</Text>
             )}
           </View>
 
@@ -250,13 +249,8 @@ export default function EditProfileScreen() {
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>HOME GYM</Text>
             {!showGymSearch ? (
-              <Pressable
-                style={styles.input}
-                onPress={() => setShowGymSearch(true)}
-              >
-                <Text
-                  style={homeGymName ? styles.inputText : styles.placeholderText}
-                >
+              <Pressable style={styles.input} onPress={() => setShowGymSearch(true)}>
+                <Text style={homeGymName ? styles.inputText : styles.placeholderText}>
                   {homeGymName || 'Select a gym'}
                 </Text>
               </Pressable>
@@ -320,7 +314,8 @@ export default function EditProfileScreen() {
             <Text style={styles.hint}>
               {defaultVisibility === 'public' && 'Anyone can see your ascents.'}
               {defaultVisibility === 'friends' && 'Only people you follow can see your ascents.'}
-              {defaultVisibility === 'private' && 'Only you can see your ascents. They still count toward problem stats anonymously.'}
+              {defaultVisibility === 'private' &&
+                'Only you can see your ascents. They still count toward problem stats anonymously.'}
             </Text>
           </View>
         </ScrollView>

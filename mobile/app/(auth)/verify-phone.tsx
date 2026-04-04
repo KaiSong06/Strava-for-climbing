@@ -75,12 +75,11 @@ export default function VerifyPhoneScreen() {
       </View>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <View style={styles.container}>
           <Text style={styles.title}>Verify your phone</Text>
-          <Text style={styles.subtitle}>
-            We sent a 6-digit code to {phone}
-          </Text>
+          <Text style={styles.subtitle}>We sent a 6-digit code to {phone}</Text>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -98,7 +97,8 @@ export default function VerifyPhoneScreen() {
           <Pressable
             style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleVerify}
-            disabled={loading}>
+            disabled={loading}
+          >
             {loading ? (
               <ActivityIndicator color={colors.onPrimary} />
             ) : (
@@ -120,10 +120,31 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: spacing.xl, paddingBottom: spacing.md },
   wordmark: { ...typography.headlineMd, color: colors.primary },
   flex: { flex: 1 },
-  container: { flex: 1, justifyContent: 'center', padding: spacing.xl, gap: spacing.md, alignItems: 'center' },
-  title: { ...typography.headlineMd, color: colors.onSurface, marginBottom: spacing.sm, textAlign: 'center' },
-  subtitle: { ...typography.bodyMd, color: colors.onSurfaceVariant, textAlign: 'center', marginBottom: spacing.xs },
-  error: { ...typography.bodyMd, color: colors.error, textAlign: 'center', marginBottom: spacing.xs },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: spacing.xl,
+    gap: spacing.md,
+    alignItems: 'center',
+  },
+  title: {
+    ...typography.headlineMd,
+    color: colors.onSurface,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  subtitle: {
+    ...typography.bodyMd,
+    color: colors.onSurfaceVariant,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  error: {
+    ...typography.bodyMd,
+    color: colors.error,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
   input: {
     ...typography.bodyLg,
     borderRadius: 12,

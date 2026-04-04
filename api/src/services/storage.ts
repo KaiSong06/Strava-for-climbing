@@ -29,12 +29,14 @@ async function uploadToS3(buffer: Buffer, contentType: string, folder: string): 
   const ext = contentType.split('/')[1] ?? 'jpg';
   const key = `${crypto.randomUUID()}.${ext}`;
 
-  await s3Client().send(new PutObjectCommand({
-    Bucket: folder,
-    Key: key,
-    Body: buffer,
-    ContentType: contentType,
-  }));
+  await s3Client().send(
+    new PutObjectCommand({
+      Bucket: folder,
+      Key: key,
+      Body: buffer,
+      ContentType: contentType,
+    }),
+  );
 
   const base = process.env['S3_PUBLIC_URL'] ?? process.env['S3_ENDPOINT'] ?? '';
   return `${base}/${folder}/${key}`;

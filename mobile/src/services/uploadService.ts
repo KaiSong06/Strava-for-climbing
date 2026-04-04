@@ -24,7 +24,7 @@ export interface ConfirmBody {
  * Returns the uploadId from the server.
  */
 export function uploadPhotos(
-  photos: Array<{ uri: string }>,
+  photos: { uri: string }[],
   colour: string,
   gymId: string,
   onProgress: (progress: number) => void,
@@ -62,7 +62,9 @@ export function uploadPhotos(
         try {
           const err = JSON.parse(xhr.responseText) as { error?: { message: string } };
           if (err.error) message = err.error.message;
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
         reject(new Error(message));
       }
     });
@@ -96,8 +98,5 @@ export async function confirmMatch(
   uploadId: string,
   body: ConfirmBody,
 ): Promise<{ ascentId: string; problemId: string }> {
-  return api.post<{ ascentId: string; problemId: string }>(
-    `/uploads/${uploadId}/confirm`,
-    body,
-  );
+  return api.post<{ ascentId: string; problemId: string }>(`/uploads/${uploadId}/confirm`, body);
 }

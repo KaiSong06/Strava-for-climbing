@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors } from '@/src/theme/colors';
 
 export interface AscentActivity {
@@ -22,9 +22,9 @@ const BADGE_STYLES: Record<
   AscentActivity['ascentType'],
   { bg: string; color: string; label: string }
 > = {
-  flash:   { bg: 'rgba(168,200,255,0.1)', color: colors.primary,   label: 'FLASH ⚡' },
-  send:    { bg: 'rgba(255,182,145,0.1)', color: colors.tertiary,  label: 'SEND' },
-  attempt: { bg: 'rgba(255,180,171,0.1)', color: colors.error,     label: 'ATTEMPT' },
+  flash: { bg: 'rgba(168,200,255,0.1)', color: colors.primary, label: 'FLASH ⚡' },
+  send: { bg: 'rgba(255,182,145,0.1)', color: colors.tertiary, label: 'SEND' },
+  attempt: { bg: 'rgba(255,180,171,0.1)', color: colors.error, label: 'ATTEMPT' },
 };
 
 export function ActivityCard({ activity, onPress }: Props) {

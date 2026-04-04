@@ -1,0 +1,13 @@
+node_modules/
+dist/
+build/
+.expo/
+*.tsbuildinfo
+__pycache__/
+.venv/
+venv/
+coverage/
+*.log
+mobile/android/
+mobile/ios/
+vision/models/

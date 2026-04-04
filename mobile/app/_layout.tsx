@@ -2,11 +2,7 @@ import { useEffect } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
-import {
-  Inter_400Regular,
-  Inter_700Bold,
-  Inter_900Black,
-} from '@expo-google-fonts/inter';
+import { Inter_400Regular, Inter_700Bold, Inter_900Black } from '@expo-google-fonts/inter';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Sentry from '@sentry/react-native';
@@ -134,7 +130,10 @@ function RootLayoutNav() {
           <Stack.Screen name="problem/[id]" options={{ title: 'Problem' }} />
           <Stack.Screen name="ascent/[id]" options={{ title: 'Ascent' }} />
           <Stack.Screen name="gym/[gymId]" options={{ title: '' }} />
-          <Stack.Screen name="log-ascent/[problemId]" options={{ title: 'Log Ascent', presentation: 'modal' }} />
+          <Stack.Screen
+            name="log-ascent/[problemId]"
+            options={{ title: 'Log Ascent', presentation: 'modal' }}
+          />
           <Stack.Screen name="feed/gym" options={{ title: 'Gym Activity' }} />
           <Stack.Screen name="ascent-history/[username]" options={{ title: 'Ascent History' }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />

@@ -43,14 +43,8 @@ export default function SearchScreen() {
           <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
         ) : (
           <>
-            <FriendsRow
-              friends={friends}
-              onFriendPress={handleFriendPress}
-            />
-            <DiscoveryGrid
-              tiles={tiles}
-              onTilePress={handleTilePress}
-            />
+            <FriendsRow friends={friends} onFriendPress={handleFriendPress} />
+            <DiscoveryGrid tiles={tiles} onTilePress={handleTilePress} />
           </>
         )}
       </ScrollView>

@@ -27,10 +27,9 @@ problemsRouter.get('/:problemId/ascents', optionalAuth, async (req, res, next) =
       })
       .parse(req.query);
 
-    const { rows: problemCheck } = await pool.query(
-      `SELECT id FROM problems WHERE id = $1`,
-      [req.params['problemId']],
-    );
+    const { rows: problemCheck } = await pool.query(`SELECT id FROM problems WHERE id = $1`, [
+      req.params['problemId'],
+    ]);
     if (!problemCheck[0]) throw new AppError('NOT_FOUND', 'Problem not found', 404);
 
     const viewerId: string | null = req.user?.userId ?? null;
@@ -60,9 +59,16 @@ problemsRouter.get('/:problemId/ascents', optionalAuth, async (req, res, next) =
     if (cursor) params.push(cursor);
 
     const { rows } = await pool.query<{
-      id: string; type: string; user_grade: string | null; rating: number | null;
-      notes: string | null; logged_at: string;
-      user_id: string; username: string; display_name: string; avatar_url: string | null;
+      id: string;
+      type: string;
+      user_grade: string | null;
+      rating: number | null;
+      notes: string | null;
+      logged_at: string;
+      user_id: string;
+      username: string;
+      display_name: string;
+      avatar_url: string | null;
     }>(
       `SELECT a.id, a.type, a.user_grade, a.rating, a.notes, a.logged_at,
               u.id AS user_id, u.username, u.display_name, u.avatar_url
@@ -76,7 +82,7 @@ problemsRouter.get('/:problemId/ascents', optionalAuth, async (req, res, next) =
       params,
     );
 
-    const has_more = rows.length > (limit);
+    const has_more = rows.length > limit;
     const data = has_more ? rows.slice(0, limit) : rows;
     const nextCursor = has_more && data.length > 0 ? data[data.length - 1]!.id : null;
 

@@ -26,12 +26,7 @@ gymsRouter.get('/nearby', async (req, res, next) => {
       })
       .parse(req.query);
 
-    const gyms = await gymService.findNearby(
-      query.lat,
-      query.lng,
-      query.radius,
-      query.limit,
-    );
+    const gyms = await gymService.findNearby(query.lat, query.lng, query.radius, query.limit);
     res.json({ data: gyms });
   } catch (err) {
     next(err);

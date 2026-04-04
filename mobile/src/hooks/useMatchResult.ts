@@ -15,10 +15,7 @@ export function useMatchResult(result: UploadStatusResponse | null) {
 
     return {
       matchedProblemId: result.matchedProblemId,
-      confidence:
-        result.similarityScore !== null
-          ? Math.round(result.similarityScore * 100)
-          : null,
+      confidence: result.similarityScore !== null ? Math.round(result.similarityScore * 100) : null,
       needsConfirmation: result.status === 'awaiting_confirmation',
       isAutoMatched: result.status === 'matched',
       isUnmatched: result.status === 'unmatched',
