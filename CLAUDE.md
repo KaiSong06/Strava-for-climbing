@@ -166,7 +166,7 @@ Key shared types beyond the tables: `FeedItem` (ascent + problem + user + gym ag
 - **Tab screens**: `(tabs)/index.tsx` = feed, `record.tsx` = upload/log a climb, `search.tsx` = search, `gym.tsx` = gym browse, `account.tsx` = user profile. Auth screens: `(auth)/login.tsx`, `(auth)/register.tsx`, `(auth)/verify-phone.tsx`.
 - **Upload service**: `mobile/src/services/uploadService.ts` — handles photo selection and multipart upload to the API.
 - **Shared types**: Import from `shared/types.ts` (not a published package; reference by relative path or configure the path in tsconfig).
-- **Mock data**: The Home screen uses `MOCK_FEED` in `HomeScreen.tsx` (TODO: replace with real API queries). The Account screen is partially API-wired — it queries `/users/:username/ascents` via React Query and converts `FeedItem` responses to `AscentActivity` format, with fallback empty state. The Gym and Search screens use local mock data (`mockGyms.ts`, `mockSearchData.ts`) — TODO: wire to API.
+- **API wiring**: All screens use real API calls via React Query. Home fetches `/feed`, Account fetches `/users/me` and `/users/:username/ascents`, Gym fetches `/gyms` and `/gyms/nearby`, Search fetches `/users/me/friends` and `/feed/discover`. No mock data remains. Search-specific presentation types (`FriendEntry`, `DiscoveryTile`) live in `mobile/src/screens/Search/searchTypes.ts`.
 
 ## UI References
 
