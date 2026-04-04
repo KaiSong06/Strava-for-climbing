@@ -9,6 +9,7 @@ export function useMatchResult(result: UploadStatusResponse | null) {
         confidence: null as number | null,
         needsConfirmation: false,
         isAutoMatched: false,
+        isUnmatched: false,
       };
     }
 
@@ -20,6 +21,7 @@ export function useMatchResult(result: UploadStatusResponse | null) {
           : null,
       needsConfirmation: result.status === 'awaiting_confirmation',
       isAutoMatched: result.status === 'matched',
+      isUnmatched: result.status === 'unmatched',
     };
   }, [result]);
 }

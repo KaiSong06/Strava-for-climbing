@@ -13,6 +13,7 @@ export type PipelineStatus =
   | 'processing'
   | 'matched'
   | 'awaiting_confirmation'
+  | 'unmatched'
   | 'failed'
   | 'confirmed';
 
@@ -58,6 +59,8 @@ export function useVisionPipeline() {
           setStatus('matched');
         } else if (s === 'awaiting_confirmation') {
           setStatus('awaiting_confirmation');
+        } else if (s === 'unmatched') {
+          setStatus('unmatched');
         } else {
           setStatus('failed');
           setError('Processing did not produce a match result');

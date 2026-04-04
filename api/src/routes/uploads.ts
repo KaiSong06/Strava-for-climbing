@@ -124,7 +124,11 @@ uploadsRouter.post('/:uploadId/confirm', requireAuth, async (req, res, next) => 
     if (row.user_id !== req.user!.userId) {
       throw new AppError('FORBIDDEN', 'Access denied', 403);
     }
-    if (row.processing_status !== 'awaiting_confirmation' && row.processing_status !== 'matched') {
+    if (
+      row.processing_status !== 'awaiting_confirmation' &&
+      row.processing_status !== 'matched' &&
+      row.processing_status !== 'unmatched'
+    ) {
       throw new AppError('INVALID_STATE', 'Upload is not awaiting confirmation', 409);
     }
 
