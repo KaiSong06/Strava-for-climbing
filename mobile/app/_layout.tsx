@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
@@ -9,13 +9,13 @@ import {
 } from '@expo-google-fonts/inter';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import * as Notifications from 'expo-notifications';
 import * as Sentry from '@sentry/react-native';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAuthStore } from '@/src/stores/authStore';
 import { registerForPushNotifications, setupNotificationHandler } from '@/src/services/pushService';
+import { useNotificationDeepLink } from '@/src/hooks/useNotificationDeepLink';
 
 Sentry.init({
   dsn: process.env['EXPO_PUBLIC_SENTRY_DSN'],
@@ -105,28 +105,15 @@ function AuthGate() {
 function PushNotificationManager() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const hasHydrated = useAuthStore((s) => s._hasHydrated);
-  const router = useRouter();
-  const listenerRef = useRef<Notifications.EventSubscription | null>(null);
 
+  // Register device push token when authenticated
   useEffect(() => {
     if (!hasHydrated || !accessToken) return;
     registerForPushNotifications().catch(console.error);
   }, [hasHydrated, accessToken]);
 
-  useEffect(() => {
-    listenerRef.current = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data as Record<string, unknown>;
-      if (data.type === 'vision_complete' || data.type === 'vision_failed') {
-        if (typeof data.uploadId === 'string') {
-          router.push(`/uploads/${data.uploadId}` as never);
-        }
-      }
-    });
-
-    return () => {
-      listenerRef.current?.remove();
-    };
-  }, [router]);
+  // Handle notification taps (cold start + backgrounded)
+  useNotificationDeepLink();
 
   return null;
 }
