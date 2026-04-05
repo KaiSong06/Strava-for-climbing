@@ -4,12 +4,14 @@ if (!process.env['REDIS_URL']) {
   throw new Error('REDIS_URL env var is required');
 }
 
-// Parse redis://[:password@]host[:port][/db] into BullMQ connection options
+// Parse redis[s]://[:password@]host[:port][/db] into BullMQ connection options
 function parseRedisUrl(url: string): {
   host: string;
   port: number;
   password?: string;
   db?: number;
+  tls?: Record<string, unknown>;
+  maxRetriesPerRequest: null;
 } {
   const parsed = new URL(url);
   return {
@@ -19,6 +21,8 @@ function parseRedisUrl(url: string): {
     ...(parsed.pathname && parsed.pathname !== '/'
       ? { db: parseInt(parsed.pathname.slice(1), 10) }
       : {}),
+    ...(parsed.protocol === 'rediss:' ? { tls: { rejectUnauthorized: false } } : {}),
+    maxRetriesPerRequest: null,
   };
 }
 

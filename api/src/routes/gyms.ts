@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import * as gymService from '../services/gymService';
+import { geocodeAddress } from '../services/geocodeService';
 
 export const gymsRouter = Router();
 
@@ -9,6 +10,24 @@ gymsRouter.get('/', async (_req, res, next) => {
   try {
     const gyms = await gymService.listAll();
     res.json({ data: gyms });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /gyms/geocode?address=<string>
+gymsRouter.get('/geocode', async (req, res, next) => {
+  try {
+    const { address } = z
+      .object({ address: z.string().min(2) })
+      .parse(req.query);
+
+    const location = await geocodeAddress(address);
+    if (!location) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No results found for that address' } });
+      return;
+    }
+    res.json({ data: location });
   } catch (err) {
     next(err);
   }

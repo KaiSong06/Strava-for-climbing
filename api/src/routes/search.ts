@@ -64,7 +64,7 @@ searchRouter.get('/', async (req, res, next) => {
     res.json({ data: results, query: q });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      throw new AppError('VALIDATION_ERROR', err.errors[0]?.message ?? 'Invalid query', 400);
+      return next(new AppError('VALIDATION_ERROR', err.errors[0]?.message ?? 'Invalid query', 400));
     }
     next(err);
   }

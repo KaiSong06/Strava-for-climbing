@@ -32,6 +32,19 @@ export function errorHandler(
     return;
   }
 
+  // Postgres invalid input syntax (e.g. invalid UUID in path params)
+  if (
+    typeof err === 'object' &&
+    err !== null &&
+    'code' in err &&
+    (err as { code: string }).code === '22P02'
+  ) {
+    res.status(400).json({
+      error: { code: 'INVALID_PARAM', message: 'Invalid parameter format.' },
+    });
+    return;
+  }
+
   Sentry.captureException(err);
   console.error('[unhandled error]', err);
   res.status(500).json({
