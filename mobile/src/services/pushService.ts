@@ -21,6 +21,7 @@ async function pushFetch(path: string, method: 'POST' | 'DELETE', body?: unknown
 }
 
 export function setupNotificationHandler(): void {
+  if (Platform.OS === 'web') return;
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
@@ -33,8 +34,7 @@ export function setupNotificationHandler(): void {
 }
 
 export async function registerForPushNotifications(): Promise<void> {
-  if (!Device.isDevice) {
-    // Push notifications only work on physical devices
+  if (Platform.OS === 'web' || !Device.isDevice) {
     return;
   }
 
@@ -72,6 +72,7 @@ export async function registerForPushNotifications(): Promise<void> {
 }
 
 export async function unregisterPushNotifications(): Promise<void> {
+  if (Platform.OS === 'web') return;
   const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
   if (!projectId) return;
 

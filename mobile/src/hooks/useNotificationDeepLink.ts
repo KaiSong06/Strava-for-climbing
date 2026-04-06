@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import { api } from '../lib/api';
@@ -50,6 +51,13 @@ function parseNotificationData(data: Record<string, unknown>): NotificationData 
  *  - unknown type                    -> no-op (app just opens)
  */
 export function useNotificationDeepLink(): void {
+  // Push notifications are not available on web
+  if (Platform.OS === 'web') return;
+
+  useNotificationDeepLinkNative();
+}
+
+function useNotificationDeepLinkNative(): void {
   const router = useRouter();
   const processedResponseIds = useRef(new Set<string>());
 
@@ -67,11 +75,9 @@ export function useNotificationDeepLink(): void {
                 params: { id: status.matchedProblemId },
               });
             } else {
-              // awaiting_confirmation or other — send to record tab for user action
               router.push('/(tabs)/record');
             }
           } catch {
-            // If we cannot fetch status, fall back to record tab
             router.push('/(tabs)/record');
           }
           break;

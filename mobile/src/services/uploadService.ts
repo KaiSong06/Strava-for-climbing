@@ -20,77 +20,69 @@ export interface ConfirmBody {
 }
 
 /**
- * Upload photos as multipart/form-data via XMLHttpRequest so progress events fire.
+ * Upload photos as multipart/form-data via fetch.
  * Returns the uploadId from the server.
+ *
+ * Note: fetch does not support granular upload progress — onProgress fires
+ * 0 at start and 1 on completion. Swap to expo-file-system uploadAsync if
+ * real-time progress is needed later.
  */
-export function uploadPhotos(
-  photos: { uri: string }[],
+export async function uploadPhotos(
+  photos: Array<{ uri: string }>,
   colour: string,
   gymId: string,
   onProgress: (progress: number) => void,
 ): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const formData = new FormData();
-    photos.forEach((photo, i) => {
-      // React Native's networking layer accepts { uri, name, type } appended to FormData
-      formData.append('photos', {
-        uri: photo.uri,
-        name: `photo_${i}.jpg`,
-        type: 'image/jpeg',
-      } as unknown as Blob);
-    });
-    formData.append('colour', colour);
-    formData.append('gym_id', gymId);
-
-    const { accessToken } = useAuthStore.getState();
-    const xhr = new XMLHttpRequest();
-
-    xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable) onProgress(e.loaded / e.total);
-    });
-
-    xhr.addEventListener('load', () => {
-      if (xhr.status === 201) {
-        try {
-          const data = JSON.parse(xhr.responseText) as { uploadId: string };
-          resolve(data.uploadId);
-        } catch {
-          reject(new Error('Invalid response from server'));
-        }
-      } else {
-        let message = `Upload failed (${xhr.status})`;
-        try {
-          const err = JSON.parse(xhr.responseText) as { error?: { message: string } };
-          if (err.error) message = err.error.message;
-        } catch {
-          /* ignore */
-        }
-        reject(new Error(message));
-      }
-    });
-
-    xhr.addEventListener('error', () => reject(new Error('Network error during upload')));
-    xhr.addEventListener('timeout', () => reject(new Error('Upload timed out')));
-
-    xhr.open('POST', `${BASE_URL}/uploads`);
-    if (accessToken) xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
-    xhr.timeout = 120_000; // 2-minute upload timeout
-    xhr.send(formData);
+  const formData = new FormData();
+  photos.forEach((photo, i) => {
+    formData.append('photos', {
+      uri: photo.uri,
+      name: `photo_${i}.jpg`,
+      type: 'image/jpeg',
+    } as unknown as Blob);
   });
+  formData.append('colour', colour);
+  formData.append('gym_id', gymId);
+
+  const { accessToken } = useAuthStore.getState();
+
+  onProgress(0);
+
+  const response = await fetch(`${BASE_URL}/uploads`, {
+    method: 'POST',
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    body: formData,
+  });
+
+  onProgress(1);
+
+  if (response.status === 201) {
+    const data = (await response.json()) as { uploadId: string };
+    return data.uploadId;
+  }
+
+  let message = `Upload failed (${response.status})`;
+  try {
+    const err = (await response.json()) as { error?: { message: string } };
+    if (err.error) message = err.error.message;
+  } catch { /* ignore */ }
+  throw new Error(message);
 }
 
 /**
  * Polls GET /uploads/:id/status every 2 s until the status leaves
- * 'pending' or 'processing'. Resolves with the final status response.
+ * 'pending' or 'processing'. Times out after 60 s.
  */
 export async function pollStatus(uploadId: string): Promise<UploadStatusResponse> {
-  while (true) {
+  const deadline = Date.now() + 60_000;
+  while (Date.now() < deadline) {
     const status = await api.get<UploadStatusResponse>(`/uploads/${uploadId}/status`);
     if (status.status !== 'pending' && status.status !== 'processing') {
       return status;
     }
     await new Promise<void>((resolve) => setTimeout(resolve, 2_000));
   }
+  throw new Error('Processing timed out. Please try again later.');
 }
 
 /** Calls POST /uploads/:id/confirm with the problem selection + ascent data. */
