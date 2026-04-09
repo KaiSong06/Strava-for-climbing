@@ -81,12 +81,52 @@ describe('errorHandler', () => {
     const { req, res, next } = makeMocks();
     const err = new Error('Something broke');
 
+    const errSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     errorHandler(err, req, res, next);
+    errSpy.mockRestore();
 
     expect(Sentry.captureException).toHaveBeenCalledWith(err);
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({
       error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred.' },
     });
+  });
+
+  it('should handle plain object errors (non-Error, non-AppError)', () => {
+    const Sentry = require('@sentry/node');
+    const { req, res, next } = makeMocks();
+    const err = { message: 'weird bag of bits' };
+
+    const errSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    errorHandler(err, req, res, next);
+    errSpy.mockRestore();
+
+    expect(Sentry.captureException).toHaveBeenCalledWith(err);
+    expect(res.status).toHaveBeenCalledWith(500);
+  });
+
+  it('should handle null errors without crashing', () => {
+    const Sentry = require('@sentry/node');
+    const { req, res, next } = makeMocks();
+
+    const errSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    errorHandler(null, req, res, next);
+    errSpy.mockRestore();
+
+    expect(Sentry.captureException).toHaveBeenCalledWith(null);
+    expect(res.status).toHaveBeenCalledWith(500);
+  });
+
+  it('should treat Postgres-like objects without code 22P02 as unknown', () => {
+    const Sentry = require('@sentry/node');
+    const { req, res, next } = makeMocks();
+    const err = { code: '42P01', message: 'relation "foo" does not exist' };
+
+    const errSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    errorHandler(err, req, res, next);
+    errSpy.mockRestore();
+
+    expect(Sentry.captureException).toHaveBeenCalledWith(err);
+    expect(res.status).toHaveBeenCalledWith(500);
   });
 });

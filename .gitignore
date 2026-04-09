@@ -14,6 +14,9 @@ build/
 .expo/
 *.tsbuildinfo
 
+# Test coverage artifacts
+coverage/
+
 # Python
 __pycache__/
 *.py[cod]
