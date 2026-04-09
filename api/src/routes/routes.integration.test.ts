@@ -39,10 +39,19 @@ jest.doMock('../services/storage', () => ({
 }));
 
 // Mock Sentry (noop) to keep error capture quiet during tests.
+// Must stub every symbol api/src/lib/sentry.ts touches at module load time —
+// otherwise importing createApp() throws `Sentry.consoleLoggingIntegration is not a function`.
 jest.doMock('@sentry/node', () => ({
   captureException: jest.fn(),
   setupExpressErrorHandler: jest.fn(),
   init: jest.fn(),
+  consoleLoggingIntegration: jest.fn(() => ({ name: 'console' })),
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    fmt: jest.fn((strings: TemplateStringsArray) => strings.join('')),
+  },
 }));
 
 // Mock pushService so we never attempt real Expo push calls.

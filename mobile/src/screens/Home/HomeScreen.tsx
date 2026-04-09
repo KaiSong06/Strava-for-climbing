@@ -61,10 +61,13 @@ export default function HomeScreen() {
           )
         }
       />
-      <CruxBanner onNotificationsPress={() => console.log('Notifications')} />
+      <CruxBanner onNotificationsPress={handleNotificationsPress} />
     </View>
   );
 }
+
+// TODO: Sprint 3 — wire up notifications screen / inbox
+function handleNotificationsPress() {}
 
 function Separator() {
   return <View style={styles.separator} />;

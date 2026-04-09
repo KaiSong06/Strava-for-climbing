@@ -5,7 +5,9 @@ import cors from 'cors';
 import { router } from './routes';
 import { errorHandler } from './middleware/errorHandler';
 import { defaultLimiter } from './middleware/rateLimiter';
+import { requestContextMiddleware } from './middleware/requestContext';
 import { setupExpressErrorHandler } from './lib/sentry';
+import { logger } from './lib/logger';
 
 export interface CreateAppOptions {
   /** Skip the default global rate limiter (useful for tests that don't want 100/min caps). */
@@ -25,12 +27,14 @@ export function createApp(options: CreateAppOptions = {}): Express {
       origin: corsOrigin ? corsOrigin.split(',') : true,
       credentials: true,
       methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Internal-Secret'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Internal-Secret', 'X-Request-Id'],
+      exposedHeaders: ['X-Request-Id'],
     }),
   );
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+  app.use(requestContextMiddleware);
 
   if (!options.disableRateLimit) {
     app.use(defaultLimiter);
@@ -49,6 +53,6 @@ if (require.main === module) {
   const app = createApp();
   const PORT = process.env['PORT'] ?? 3001;
   app.listen(PORT, () => {
-    console.log(`[api] listening on port ${PORT}`);
+    logger.info('api listening', { port: Number(PORT) });
   });
 }

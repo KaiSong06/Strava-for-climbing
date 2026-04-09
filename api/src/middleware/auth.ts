@@ -1,6 +1,8 @@
 import { RequestHandler } from 'express';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { AppError } from './errorHandler';
+import { logger } from '../lib/logger';
+import { updateRequestContext } from '../lib/requestContext';
 
 interface JwtPayload {
   userId: string;
@@ -33,6 +35,7 @@ export const optionalAuth: RequestHandler = async (req, _res, next) => {
   if (!header?.startsWith('Bearer ')) return next();
   try {
     req.user = await extractPayload(header.slice(7));
+    updateRequestContext({ userId: req.user.userId });
   } catch {
     // invalid/expired — continue unauthenticated
   }
@@ -46,9 +49,15 @@ export const requireAuth: RequestHandler = async (req, _res, next) => {
   }
   try {
     req.user = await extractPayload(header.slice(7));
+    updateRequestContext({ userId: req.user.userId });
     next();
   } catch (err) {
-    console.error('[auth] JWT verification failed:', err);
+    // Never log the raw token, headers, or stack — only a coarse reason.
+    logger.warn('JWT verification failed', {
+      reason: err instanceof Error ? err.message : 'unknown',
+      ip: req.ip,
+      path: req.path,
+    });
     next(new AppError('UNAUTHORIZED', 'Token expired or invalid', 401));
   }
 };

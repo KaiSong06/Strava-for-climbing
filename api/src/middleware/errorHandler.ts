@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
 import * as Sentry from '@sentry/node';
+import { logger } from '../lib/logger';
+import { getRequestContext } from '../lib/requestContext';
 
 export class AppError extends Error {
   constructor(
@@ -15,7 +17,7 @@ export class AppError extends Error {
 
 export function errorHandler(
   err: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction,
 ): void {
@@ -46,7 +48,18 @@ export function errorHandler(
   }
 
   Sentry.captureException(err);
-  console.error('[unhandled error]', err);
+
+  const ctx = getRequestContext();
+  logger.error('Unhandled error', {
+    requestId: ctx?.requestId,
+    userId: ctx?.userId,
+    method: req.method,
+    path: req.path,
+    statusCode: 500,
+    error: err instanceof Error ? err.message : String(err),
+    stack: err instanceof Error ? err.stack : undefined,
+  });
+
   res.status(500).json({
     error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred.' },
   });

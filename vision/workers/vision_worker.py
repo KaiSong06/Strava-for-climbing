@@ -14,6 +14,7 @@ from typing import Any
 
 import cv2
 import numpy as np
+import sentry_sdk
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ def load_sam_model() -> Any:
     sam = sam_model_registry["vit_b"](checkpoint=SAM_CHECKPOINT)
     sam.to(device)
     sam.eval()
-    logger.info("[vision] SAM ViT-B loaded on %s", device)
+    logger.info("vision.sam_loaded", extra={"device": device})
     return sam
 
 
@@ -58,7 +59,7 @@ def load_midas_model() -> tuple[Any, Any]:
     midas.to(device)
     midas.eval()
     transforms = torch.hub.load("intel-isl/MiDaS", "transforms", trust_repo=True)
-    logger.info("[vision] MiDaS small loaded on %s", device)
+    logger.info("vision.midas_loaded", extra={"device": device})
     return midas, transforms.small_transform
 
 
@@ -481,13 +482,21 @@ def process_upload(
       6. Depth estimation (TODO — skipped for MVP)
       7. Return result
     """
-    logger.info("[pipeline] start upload=%s gym=%s colour=%s", upload_id, gym_id, colour)
+    log_ctx = {"upload_id": upload_id, "gym_id": gym_id, "colour": colour}
+    logger.info("vision.pipeline.start", extra=log_ctx)
+
+    def _fail(stage: str, exc: Exception) -> RuntimeError:
+        """Tag Sentry with stage context before re-raising as a stage_N_failed RuntimeError."""
+        sentry_sdk.set_context("vision_pipeline", {**log_ctx, "stage": stage})
+        sentry_sdk.capture_exception(exc)
+        return RuntimeError(f"stage_{stage}_failed")
 
     # Stage 1
+    logger.info("vision.stage.load_images.start", extra=log_ctx)
     try:
         images = _load_images(photo_urls)
     except Exception as exc:
-        raise RuntimeError("stage_1_failed") from exc
+        raise _fail("1", exc) from exc
 
     all_norm_centroids: list[tuple[float, float]] = []
     wall_bbox: dict[str, int] | None = None
@@ -499,20 +508,20 @@ def process_upload(
         try:
             colour_mask = _build_colour_mask(img, colour)
         except Exception as exc:
-            raise RuntimeError("stage_2_failed") from exc
+            raise _fail("2", exc) from exc
 
         # Stage 3
         try:
             px_centroids = _segment_holds(img, colour_mask, sam_model)
         except Exception as exc:
-            raise RuntimeError("stage_3_failed") from exc
+            raise _fail("3", exc) from exc
 
         # Stage 4 (use first image's bbox as representative)
         if wall_bbox is None:
             try:
                 wall_bbox = _detect_wall_bbox(img)
             except Exception as exc:
-                raise RuntimeError("stage_4_failed") from exc
+                raise _fail("4", exc) from exc
 
         # Stage 5: normalise this image's centroids
         norm = _normalise(px_centroids, wall_bbox, (img_h, img_w))
@@ -538,11 +547,11 @@ def process_upload(
         "h": wall_bbox["h"] / ref_h,
     }
 
-    # Stage 6: depth estimation + 3D model generation
+    # Stage 6: depth estimation + 3D model generation (non-fatal)
     model_glb_base64: str | None = None
     try:
         depth_map = _run_midas_depth(images[0], midas_model, midas_transform)
-        logger.info("[pipeline] stage 6: MiDaS depth estimated upload=%s", upload_id)
+        logger.info("vision.stage.depth.complete", extra=log_ctx)
 
         glb_bytes = _generate_glb_model(
             image=images[0],
@@ -553,14 +562,16 @@ def process_upload(
         )
         model_glb_base64 = base64.b64encode(glb_bytes).decode("ascii")
         logger.info(
-            "[pipeline] stage 6: GLB generated upload=%s size=%dKB",
-            upload_id,
-            len(glb_bytes) // 1024,
+            "vision.stage.glb.generated",
+            extra={**log_ctx, "glb_size_kb": len(glb_bytes) // 1024},
         )
-    except Exception:
-        logger.exception("[pipeline] stage 6 failed (non-fatal) upload=%s", upload_id)
+    except Exception as exc:
+        # Non-fatal: surface to Sentry with stage context but continue the pipeline.
+        sentry_sdk.set_context("vision_pipeline", {**log_ctx, "stage": "6"})
+        sentry_sdk.capture_exception(exc)
+        logger.exception("vision.stage.glb.failed", extra=log_ctx)
 
-    logger.info("[pipeline] done upload=%s holds=%d", upload_id, hold_count)
+    logger.info("vision.pipeline.done", extra={**log_ctx, "hold_count": hold_count})
     return {
         "hold_vector": hold_vector,
         "hold_count": hold_count,

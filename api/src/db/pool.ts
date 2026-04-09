@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import { logger } from '../lib/logger';
 
 if (!process.env['DATABASE_URL']) {
   throw new Error('DATABASE_URL env var is required');
@@ -13,5 +14,7 @@ export const pool = new Pool({
 });
 
 pool.on('error', (err) => {
-  console.error('[pg] idle client error', err);
+  logger.error('pg idle client error', {
+    error: err instanceof Error ? err.message : String(err),
+  });
 });

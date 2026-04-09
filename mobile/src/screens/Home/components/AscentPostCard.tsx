@@ -45,6 +45,9 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
+// TODO: Sprint 3 — wire up feed interactions (menu, like, comments, share, bookmark)
+const noop = () => {};
+
 export function AscentPostCard({ item }: { item: AscentPostData }) {
   const photo = item.photo_urls[0];
 
@@ -66,11 +69,10 @@ export function AscentPostCard({ item }: { item: AscentPostData }) {
           </View>
         </View>
         <AccessiblePressable
-          onPress={() => console.log('Menu pressed')}
+          accessibilityLabel={`More options for ${item.display_name}'s post`}
+          onPress={noop}
           hitSlop={8}
           style={({ pressed }) => pressed && styles.pressed}
-          accessibilityLabel={`More options for ${item.display_name}'s ascent`}
-          accessibilityRole="button"
         >
           <MaterialCommunityIcons
             name="dots-horizontal"
@@ -99,10 +101,9 @@ export function AscentPostCard({ item }: { item: AscentPostData }) {
         <View style={styles.interactionBar}>
           <View style={styles.interactionLeft}>
             <AccessiblePressable
-              onPress={() => console.log('Like pressed')}
+              accessibilityLabel="Like post"
+              onPress={noop}
               style={({ pressed }) => pressed && styles.pressed}
-              accessibilityLabel={`Like ${item.display_name}'s ascent`}
-              accessibilityRole="button"
             >
               <MaterialCommunityIcons
                 name="heart-outline"
@@ -112,10 +113,9 @@ export function AscentPostCard({ item }: { item: AscentPostData }) {
             </AccessiblePressable>
 
             <AccessiblePressable
-              onPress={() => console.log('Comments pressed')}
+              accessibilityLabel="Comment on post"
+              onPress={noop}
               style={({ pressed }) => pressed && styles.pressed}
-              accessibilityLabel={`Comment on ${item.display_name}'s ascent`}
-              accessibilityRole="button"
             >
               <MaterialCommunityIcons
                 name="chat-outline"
@@ -125,10 +125,9 @@ export function AscentPostCard({ item }: { item: AscentPostData }) {
             </AccessiblePressable>
 
             <AccessiblePressable
-              onPress={() => console.log('Share pressed')}
+              accessibilityLabel="Share post"
+              onPress={noop}
               style={({ pressed }) => pressed && styles.pressed}
-              accessibilityLabel={`Share ${item.display_name}'s ascent`}
-              accessibilityRole="button"
             >
               <MaterialCommunityIcons
                 name="share-outline"
@@ -139,10 +138,9 @@ export function AscentPostCard({ item }: { item: AscentPostData }) {
           </View>
 
           <AccessiblePressable
-            onPress={() => console.log('Bookmark pressed')}
+            accessibilityLabel="Bookmark post"
+            onPress={noop}
             style={({ pressed }) => pressed && styles.pressed}
-            accessibilityLabel={`Bookmark ${item.display_name}'s ascent`}
-            accessibilityRole="button"
           >
             <MaterialCommunityIcons
               name="bookmark-outline"
@@ -162,11 +160,7 @@ export function AscentPostCard({ item }: { item: AscentPostData }) {
         )}
 
         {/* View all comments */}
-        <AccessiblePressable
-          onPress={() => console.log('View comments pressed')}
-          accessibilityLabel={`View all comments on ${item.display_name}'s ascent`}
-          accessibilityRole="button"
-        >
+        <AccessiblePressable accessibilityLabel="View all comments" onPress={noop}>
           <Text style={styles.viewComments}>VIEW ALL COMMENTS</Text>
         </AccessiblePressable>
       </View>

@@ -1,5 +1,6 @@
 import { Expo, ExpoPushMessage, ExpoPushTicket } from 'expo-server-sdk';
 import { pool } from '../db/pool';
+import { logger } from '../lib/logger';
 
 const expo = new Expo();
 
@@ -42,13 +43,19 @@ export async function sendToUser(
     try {
       tickets = await expo.sendPushNotificationsAsync(chunk);
     } catch (err) {
-      console.error('[push] send chunk failed:', err);
+      logger.warn('push.send_chunk_failed', {
+        chunkSize: chunk.length,
+        error: err instanceof Error ? err.message : String(err),
+      });
       continue;
     }
 
     tickets.forEach((ticket, i) => {
       if (ticket.status === 'error') {
-        console.error('[push] ticket error:', ticket.message, ticket.details);
+        logger.warn('push.ticket_error', {
+          ticketMessage: ticket.message,
+          ticketErrorCode: ticket.details?.error ?? null,
+        });
         if (ticket.details?.error === 'DeviceNotRegistered') {
           const msg = chunk[i];
           if (msg && typeof msg.to === 'string') invalidTokens.push(msg.to);

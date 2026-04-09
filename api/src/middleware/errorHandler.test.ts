@@ -2,7 +2,22 @@ import { Request, Response, NextFunction } from 'express';
 import { ZodError, ZodIssue } from 'zod';
 import { AppError, errorHandler } from './errorHandler';
 
-jest.mock('@sentry/node', () => ({ captureException: jest.fn() }));
+// errorHandler.ts now imports ../lib/logger → ../lib/sentry at module load time,
+// so the @sentry/node mock must provide every symbol that chain touches, not
+// just captureException. Without these stubs, importing errorHandler throws
+// "Sentry.init is not a function" during test setup.
+jest.mock('@sentry/node', () => ({
+  captureException: jest.fn(),
+  init: jest.fn(),
+  setupExpressErrorHandler: jest.fn(),
+  consoleLoggingIntegration: jest.fn(() => ({ name: 'console' })),
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    fmt: jest.fn((strings: TemplateStringsArray) => strings.join('')),
+  },
+}));
 
 function makeMocks() {
   const req = {} as Request;
@@ -81,9 +96,7 @@ describe('errorHandler', () => {
     const { req, res, next } = makeMocks();
     const err = new Error('Something broke');
 
-    const errSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     errorHandler(err, req, res, next);
-    errSpy.mockRestore();
 
     expect(Sentry.captureException).toHaveBeenCalledWith(err);
     expect(res.status).toHaveBeenCalledWith(500);
@@ -97,9 +110,7 @@ describe('errorHandler', () => {
     const { req, res, next } = makeMocks();
     const err = { message: 'weird bag of bits' };
 
-    const errSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     errorHandler(err, req, res, next);
-    errSpy.mockRestore();
 
     expect(Sentry.captureException).toHaveBeenCalledWith(err);
     expect(res.status).toHaveBeenCalledWith(500);
@@ -111,6 +122,7 @@ describe('errorHandler', () => {
 
     const errSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     errorHandler(null, req, res, next);
+    /* null path — Sentry.captureException is still called with null per current handler behaviour */
     errSpy.mockRestore();
 
     expect(Sentry.captureException).toHaveBeenCalledWith(null);
@@ -122,9 +134,7 @@ describe('errorHandler', () => {
     const { req, res, next } = makeMocks();
     const err = { code: '42P01', message: 'relation "foo" does not exist' };
 
-    const errSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     errorHandler(err, req, res, next);
-    errSpy.mockRestore();
 
     expect(Sentry.captureException).toHaveBeenCalledWith(err);
     expect(res.status).toHaveBeenCalledWith(500);

@@ -5,11 +5,13 @@
  * Run: cd api && npm run worker:vision
  */
 import 'dotenv/config';
+import '../lib/sentry';
 import { Worker, Job } from 'bullmq';
 import { redisConnection, VisionJobData } from './queue';
 import { pool } from '../db/pool';
 import * as pushService from '../services/pushService';
 import { uploadBuffer } from '../services/storage';
+import { logger } from '../lib/logger';
 
 /* istanbul ignore next -- startup env guard, exercised only when module is entry-point */
 if (!process.env['VISION_SERVICE_URL']) {
@@ -38,6 +40,7 @@ interface VisionResult {
  */
 export async function processVisionJob(job: Job<VisionJobData>): Promise<void> {
   const { uploadId, gymId, colour, photoUrls } = job.data;
+  const startedAt = Date.now();
 
   // ── 1. Mark as processing ────────────────────────────────────────────────
   const { rows: uploadRows } = await pool.query<{ user_id: string }>(
@@ -78,9 +81,18 @@ export async function processVisionJob(job: Job<VisionJobData>): Promise<void> {
     try {
       const glbBuffer = Buffer.from(result.model_glb_base64, 'base64');
       modelUrl = await uploadBuffer(glbBuffer, 'model/gltf-binary', 'models');
-      console.log(`[vision] GLB uploaded for upload ${uploadId}: ${modelUrl}`);
+      logger.info('vision.glb.uploaded', {
+        uploadId,
+        gymId,
+        modelUrl,
+        sizeBytes: glbBuffer.length,
+      });
     } catch (err) {
-      console.error(`[vision] GLB upload failed (non-fatal):`, (err as Error).message);
+      logger.warn('vision.glb.upload_failed', {
+        uploadId,
+        gymId,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
@@ -120,9 +132,13 @@ export async function processVisionJob(job: Job<VisionJobData>): Promise<void> {
         ])
         .catch(() => {});
     }
-    console.log(
-      `[vision] auto-matched upload ${uploadId} → problem ${topProblemId} (score=${topScore.toFixed(3)})`,
-    );
+    logger.info('vision.auto_matched', {
+      uploadId,
+      gymId,
+      problemId: topProblemId,
+      score: topScore,
+      durationMs: Date.now() - startedAt,
+    });
     if (userId) {
       pushService
         .sendToUser(userId, 'Climb identified!', 'Tap to log your ascent.', {
@@ -142,8 +158,14 @@ export async function processVisionJob(job: Job<VisionJobData>): Promise<void> {
        WHERE id = $1`,
       [uploadId, topScore],
     );
-    const label = topScore >= SIMILARITY_THRESHOLD_CONFIRM ? 'confirm-needed' : 'new-problem';
-    console.log(`[vision] ${label} upload ${uploadId} (score=${topScore.toFixed(3)})`);
+    const outcome = topScore >= SIMILARITY_THRESHOLD_CONFIRM ? 'confirm_needed' : 'new_problem';
+    logger.info('vision.awaiting_confirmation', {
+      uploadId,
+      gymId,
+      outcome,
+      score: topScore,
+      durationMs: Date.now() - startedAt,
+    });
     if (userId) {
       pushService
         .sendToUser(userId, 'Review your climb', 'We found a possible match — tap to confirm.', {
@@ -164,7 +186,11 @@ if (require.main === module) {
   });
 
   worker.on('failed', async (job, err) => {
-    console.error(`[vision] job ${job?.id ?? '?'} failed:`, err.message);
+    logger.error('vision.job_failed', {
+      jobId: job?.id ?? null,
+      uploadId: job?.data.uploadId ?? null,
+      error: err.message,
+    });
     if (job?.data.uploadId) {
       const { rows } = await pool
         .query<{
@@ -174,7 +200,10 @@ if (require.main === module) {
           [job.data.uploadId],
         )
         .catch((dbErr: unknown) => {
-          console.error('[vision] failed to mark upload as failed:', (dbErr as Error).message);
+          logger.error('vision.mark_failed_db_error', {
+            uploadId: job.data.uploadId,
+            error: dbErr instanceof Error ? dbErr.message : String(dbErr),
+          });
           return { rows: [] as { user_id: string }[] };
         });
       const userId = rows[0]?.user_id;
@@ -189,5 +218,5 @@ if (require.main === module) {
     }
   });
 
-  console.log('[vision] worker started, listening on queue "vision"');
+  logger.info('vision.worker_started', { queue: 'vision' });
 }

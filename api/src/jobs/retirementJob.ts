@@ -6,8 +6,10 @@
  * Or trigger via HTTP endpoint:  POST /internal/run-retirement
  */
 import 'dotenv/config';
+import '../lib/sentry';
 import cron from 'node-cron';
 import { pool } from '../db/pool';
+import { logger } from '../lib/logger';
 
 export async function runRetirement(): Promise<number> {
   const { rowCount } = await pool.query(
@@ -20,7 +22,7 @@ export async function runRetirement(): Promise<number> {
        ) * INTERVAL '1 day' < NOW()`,
   );
   const retired = rowCount ?? 0;
-  console.log(`[retirement] retired ${retired} problem(s)`);
+  logger.info('retirement.run_complete', { retiredCount: retired });
   return retired;
 }
 
@@ -30,8 +32,10 @@ if (require.main === module) {
     try {
       await runRetirement();
     } catch (err) {
-      console.error('[retirement] job failed:', err);
+      logger.error('retirement.job_failed', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   });
-  console.log('[retirement] worker started — cron scheduled for 02:00 UTC daily');
+  logger.info('retirement.worker_started', { cron: '0 2 * * *', tz: 'UTC' });
 }

@@ -48,6 +48,21 @@ MiDaS small is auto-cached by `torch.hub` on first startup.
 
 Fly.io (`fly.toml`): region `yyz`, 2 CPUs / 4 GB RAM, min 0 machines (scales to zero). Internal port 8000.
 
+## Observability
+
+The service uses `sentry-sdk[fastapi]` for structured logging and error tracking. `sentry_sdk.init()` runs at module import time in `main.py` only when `SENTRY_DSN` is set; otherwise it is a no-op and stdlib logging still works normally.
+
+- `FastApiIntegration` captures request spans and unhandled exceptions automatically.
+- `LoggingIntegration(level=INFO, event_level=ERROR)` forwards every `logger.info` call as a Sentry log event and every `logger.error/exception` as an error event — so production code uses stdlib `logging` rather than calling Sentry directly.
+- `_experiments={"enable_logs": True}` enables the experimental Sentry Log API in SDK v2.18.
+- Pipeline stages use `logger.info("vision.stage.<name>.start/complete", extra={...})` for structured event names. Each stage's `try/except` block calls `sentry_sdk.capture_exception(exc)` with a `vision_pipeline` context tag before re-raising.
+- **Never log** raw photo bytes, full S3 URLs with signatures, or user-identifying metadata beyond `upload_id` / `gym_id`.
+
+Relevant env vars:
+
+- `SENTRY_DSN` — DSN for the vision Sentry project (optional; if unset, Sentry is skipped entirely).
+- `ENVIRONMENT` — defaults to `development`, set to `production` on Fly.io.
+
 ## Architecture Note
 
 The vision service is stateless and HTTP-only. It does NOT read from Redis or the database. The TypeScript BullMQ worker (`api/src/jobs/visionWorker.ts`) orchestrates the flow: dequeue job → call this service → store result in Postgres → update upload status → send push notification.
