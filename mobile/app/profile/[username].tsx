@@ -14,7 +14,7 @@ import { api } from '@/src/lib/api';
 import { FollowButton } from '@/src/components/FollowButton';
 import { FeedCard } from '@/src/components/FeedCard';
 import { useAuthStore } from '@/src/stores/authStore';
-import type { FeedItem, PaginatedResponse, UserProfile } from '../../../shared/types';
+import type { FeedItem, PaginatedResponse, UserProfile } from '@shared/types';
 
 function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnProfile: boolean }) {
   const router = useRouter();

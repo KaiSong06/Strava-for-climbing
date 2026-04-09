@@ -1,6 +1,6 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import type { AuthUser } from '../../../../../shared/types';
+import type { AuthUser } from '@shared/types';
 import { colors } from '@/src/theme/colors';
 
 interface Props {

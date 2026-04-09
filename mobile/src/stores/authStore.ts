@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { unregisterPushNotifications } from '../services/pushService';
-import type { AuthUser } from '../../../shared/types';
+import type { AuthUser } from '@shared/types';
 
 interface AuthState {
   session: Session | null;

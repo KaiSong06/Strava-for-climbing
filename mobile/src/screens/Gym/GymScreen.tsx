@@ -20,7 +20,7 @@ import { CruxBanner, BANNER_HEIGHT } from '@/src/components/CruxBanner';
 import { useGeocode } from '@/src/hooks/useGeocode';
 import { useNearbyGyms } from '@/src/hooks/useNearbyGyms';
 import { GymCard } from './components/GymCard';
-import type { Gym } from '../../../../shared/types';
+import type { Gym } from '@shared/types';
 
 // react-native-maps is native-only; lazy-load to avoid web bundling errors
 const MapSection = lazy(() =>

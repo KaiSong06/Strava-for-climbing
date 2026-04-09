@@ -7,7 +7,7 @@ import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 import { typography } from '@/src/theme/typography';
 import { darkMapStyle } from './mapStyle';
-import type { Gym } from '../../../../../shared/types';
+import type { Gym } from '@shared/types';
 
 const DEFAULT_REGION: Region = {
   latitude: 45.42,

@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { api } from '@/src/lib/api';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useFollowStore } from '@/src/stores/followStore';
-import type { AuthUser, FeedItem, PaginatedResponse } from '../../../../shared/types';
+import type { AuthUser, FeedItem, PaginatedResponse } from '@shared/types';
 import { colors } from '@/src/theme/colors';
 import { CruxBanner, BANNER_HEIGHT } from '@/src/components/CruxBanner';
 import { ProfileHeader } from './components/ProfileHeader';

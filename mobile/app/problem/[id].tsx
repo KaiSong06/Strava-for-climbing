@@ -15,7 +15,7 @@ import { api } from '@/src/lib/api';
 import { useAuthStore } from '@/src/stores/authStore';
 import { HolographicModelViewer } from '@/src/components/HolographicModelViewer';
 import { colors } from '@/src/theme/colors';
-import type { PaginatedResponse, AscentType } from '../../../shared/types';
+import type { PaginatedResponse, AscentType } from '@shared/types';
 
 interface ProblemDetail {
   id: string;

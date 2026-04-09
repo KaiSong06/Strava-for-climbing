@@ -1,21 +1,5 @@
 import { pool } from '../db/pool';
-
-export interface FeedItem {
-  id: string;
-  logged_at: string;
-  type: 'flash' | 'send' | 'attempt';
-  user: { id: string; username: string; display_name: string; avatar_url: string | null };
-  problem: {
-    id: string;
-    colour: string;
-    consensus_grade: string | null;
-    gym: { id: string; name: string };
-  };
-  user_grade: string | null;
-  rating: number | null;
-  notes: string | null;
-  photo_urls: string[];
-}
+import type { FeedItem } from '@shared/types';
 
 type FeedRow = {
   id: string;

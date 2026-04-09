@@ -89,10 +89,11 @@ Always import from `src/theme/` — never hardcode values:
 
 ## Path Alias
 
-`@/*` maps to the mobile root (e.g., `@/src/stores/authStore`).
+- `@/*` maps to the mobile root (e.g., `@/src/stores/authStore`).
+- `@shared/*` maps to the repo-level `shared/` directory (e.g., `@shared/types`).
 
 ## TypeScript
 
 - Strict mode, extends `expo/tsconfig.base`
 - Typed routes enabled (`experiments.typedRoutes: true` in app.json)
-- `shared/types.ts` imported via relative path (`../../../shared/types`)
+- `shared/types.ts` imported via the `@shared/*` path alias (e.g., `import type { FeedItem } from '@shared/types'`)

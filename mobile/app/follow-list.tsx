@@ -13,7 +13,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { api } from '@/src/lib/api';
 import { FollowButton } from '@/src/components/FollowButton';
 import { useAuthStore } from '@/src/stores/authStore';
-import type { PaginatedResponse, UserProfile } from '../../shared/types';
+import type { PaginatedResponse, UserProfile } from '@shared/types';
 
 export default function FollowListScreen() {
   const router = useRouter();

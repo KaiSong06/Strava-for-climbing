@@ -1,8 +1,6 @@
 import { pool } from '../db/pool';
 import { AppError } from '../middleware/errorHandler';
-
-export type AscentType = 'flash' | 'send' | 'attempt';
-export type AscentVisibility = 'public' | 'friends' | 'private';
+import type { AscentType, AscentVisibility } from '@shared/types';
 
 export interface AscentInput {
   user_grade: string | null;

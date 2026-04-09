@@ -1,34 +1,7 @@
 import { pool } from '../db/pool';
 import { AppError } from '../middleware/errorHandler';
 import { uploadBase64Image } from './storage';
-export interface AuthUser {
-  id: string;
-  username: string;
-  display_name: string;
-  avatar_url: string | null;
-  home_gym_id: string | null;
-  username_changed_at: string | null;
-  default_visibility: 'public' | 'friends' | 'private';
-  phone: string;
-  home_gym_name: string | null;
-  follower_count: number;
-  following_count: number;
-  created_at: string;
-}
-
-export interface UserProfile {
-  id: string;
-  username: string;
-  display_name: string;
-  avatar_url: string | null;
-  home_gym_id: string | null;
-  username_changed_at: string | null;
-  default_visibility: 'public' | 'friends' | 'private';
-  home_gym_name: string | null;
-  follower_count: number;
-  following_count: number;
-  created_at: string;
-}
+import type { AuthUser, UserProfile } from '@shared/types';
 
 const PROFILE_SELECT = `
   SELECT u.id, u.username, u.display_name, u.avatar_url, u.home_gym_id,

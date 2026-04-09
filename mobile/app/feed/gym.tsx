@@ -4,7 +4,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { api } from '@/src/lib/api';
 import { FeedCard } from '@/src/components/FeedCard';
-import type { FeedItem, Gym, PaginatedResponse } from '../../../shared/types';
+import type { FeedItem, Gym, PaginatedResponse } from '@shared/types';
 
 export default function GymFeedScreen() {
   const { gymId } = useLocalSearchParams<{ gymId: string }>();

@@ -18,7 +18,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '@/src/lib/api';
 import { useAuthStore } from '@/src/stores/authStore';
-import type { AuthUser } from '../../../shared/types';
+import type { AuthUser } from '@shared/types';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 import { typography } from '@/src/theme/typography';

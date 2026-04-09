@@ -15,7 +15,7 @@ import { api } from '@/src/lib/api';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 import { typography } from '@/src/theme/typography';
-import type { AscentType, AscentVisibility } from '../../../shared/types';
+import type { AscentType, AscentVisibility } from '@shared/types';
 
 interface AscentDetail {
   id: string;
