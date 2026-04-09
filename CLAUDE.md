@@ -33,6 +33,8 @@ Social bouldering app for iOS and Android. Users log climbs, follow friends, and
 
 Each subdirectory (`api/`, `mobile/`, `vision/`, `db/`, `test/`) has its own `CLAUDE.md` with directory-specific details (commands, architecture, constraints). Refer to those when working within a single directory.
 
+Cross-cutting docs live in [`docs/`](./docs/README.md): ADRs explaining why the stack looks the way it does, the generated OpenAPI 3.1 spec (`docs/openapi.json`, rebuild via `cd api && npm run docs:openapi`), and a DBML schema reference in `docs/schema.md`.
+
 ---
 
 ## Key commands

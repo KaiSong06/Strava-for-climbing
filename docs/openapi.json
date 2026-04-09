@@ -1,0 +1,2737 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Crux API",
+    "version": "0.1.0",
+    "description": "REST API for Crux (\"Strava for bouldering\"). Generated from Zod schemas via @asteasolutions/zod-to-openapi. See docs/adr/ for architectural decisions."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001",
+      "description": "Local development"
+    }
+  ],
+  "tags": [
+    {
+      "name": "health"
+    },
+    {
+      "name": "auth"
+    },
+    {
+      "name": "users"
+    },
+    {
+      "name": "follows"
+    },
+    {
+      "name": "gyms"
+    },
+    {
+      "name": "feed"
+    },
+    {
+      "name": "uploads"
+    },
+    {
+      "name": "ascents"
+    },
+    {
+      "name": "problems"
+    },
+    {
+      "name": "disputes"
+    },
+    {
+      "name": "search"
+    },
+    {
+      "name": "push-tokens"
+    },
+    {
+      "name": "internal"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Supabase Auth ES256 JWT. Verified via JWKS fetched from {SUPABASE_URL}/auth/v1/.well-known/jwks.json."
+      },
+      "InternalSecret": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Internal-Secret",
+        "description": "Shared secret for the /internal routes. Used by external cron triggers."
+      }
+    },
+    "schemas": {
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "example": "VALIDATION_ERROR"
+              },
+              "message": {
+                "type": "string",
+                "example": "At least 1 photo is required"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "UserProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "11111111-0000-0000-0000-000000000001"
+          },
+          "username": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "avatar_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "home_gym_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "example": "11111111-0000-0000-0000-000000000001"
+          },
+          "username_changed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-04-09T12:34:56.000Z"
+          },
+          "default_visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "friends",
+              "private"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-04-09T12:34:56.000Z"
+          },
+          "home_gym_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "follower_count": {
+            "type": "integer"
+          },
+          "following_count": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "display_name",
+          "avatar_url",
+          "home_gym_id",
+          "username_changed_at",
+          "default_visibility",
+          "created_at",
+          "home_gym_name",
+          "follower_count",
+          "following_count"
+        ]
+      },
+      "AuthUser": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/UserProfile"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "phone": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "phone"
+            ]
+          }
+        ]
+      },
+      "FeedItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "11111111-0000-0000-0000-000000000001"
+          },
+          "logged_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-04-09T12:34:56.000Z"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "flash",
+              "send",
+              "attempt"
+            ]
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "example": "11111111-0000-0000-0000-000000000001"
+              },
+              "username": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "avatar_url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "username",
+              "display_name",
+              "avatar_url"
+            ]
+          },
+          "problem": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "example": "11111111-0000-0000-0000-000000000001"
+              },
+              "colour": {
+                "type": "string"
+              },
+              "consensus_grade": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "gym": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "11111111-0000-0000-0000-000000000001"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "colour",
+              "consensus_grade",
+              "gym"
+            ]
+          },
+          "user_grade": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rating": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 5
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "photo_urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "logged_at",
+          "type",
+          "user",
+          "problem",
+          "user_grade",
+          "rating",
+          "notes",
+          "photo_urls"
+        ]
+      },
+      "Gym": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "11111111-0000-0000-0000-000000000001"
+          },
+          "name": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          },
+          "default_retirement_days": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-04-09T12:34:56.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "city",
+          "lat",
+          "lng",
+          "default_retirement_days",
+          "created_at"
+        ]
+      },
+      "NearbyGym": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Gym"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "distance_km": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "distance_km"
+            ]
+          }
+        ]
+      },
+      "Problem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "11111111-0000-0000-0000-000000000001"
+          },
+          "gym_id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "11111111-0000-0000-0000-000000000001"
+          },
+          "colour": {
+            "type": "string"
+          },
+          "hold_vector": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "number"
+            }
+          },
+          "model_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "retired"
+            ]
+          },
+          "consensus_grade": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "total_sends": {
+            "type": "integer"
+          },
+          "first_upload_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-04-09T12:34:56.000Z"
+          },
+          "retired_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-04-09T12:34:56.000Z"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-04-09T12:34:56.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "gym_id",
+          "colour",
+          "hold_vector",
+          "model_url",
+          "status",
+          "consensus_grade",
+          "total_sends",
+          "first_upload_at",
+          "retired_at",
+          "created_at"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Liveness probe (also checks Postgres reachability)",
+        "tags": [
+          "health"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "db": {
+                      "type": "string",
+                      "enum": [
+                        "connected",
+                        "disconnected"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "db"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/delete-account": {
+      "post": {
+        "summary": "Permanently delete the authenticated user (Supabase + public.users)",
+        "description": "Rate limited by authLimiter (10/min).",
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "summary": "Fetch the authenticated user profile (includes phone)",
+        "tags": [
+          "users"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthUser"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update the authenticated user profile",
+        "tags": [
+          "users"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9_]{3,20}$"
+                  },
+                  "display_name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 50
+                  },
+                  "home_gym_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid",
+                    "example": "11111111-0000-0000-0000-000000000001"
+                  },
+                  "avatar_base64": {
+                    "type": "string"
+                  },
+                  "default_visibility": {
+                    "type": "string",
+                    "enum": [
+                      "public",
+                      "friends",
+                      "private"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{username}": {
+      "get": {
+        "summary": "Public profile lookup by username",
+        "tags": [
+          "users"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "username",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{username}/ascents": {
+      "get": {
+        "summary": "Paginated ascents (visibility depends on viewer)",
+        "tags": [
+          "users"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "username",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Opaque base64url cursor from a prior response"
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "description": "Page size (1–50)"
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/FeedItem"
+                      }
+                    },
+                    "cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "cursor",
+                    "has_more"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/friends": {
+      "get": {
+        "summary": "Users the authenticated user follows, ordered by recent activity",
+        "tags": [
+          "follows"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/UserProfile"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{username}/follow": {
+      "post": {
+        "summary": "Follow a user",
+        "tags": [
+          "follows"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "username",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "following": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "following"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already following",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Unfollow a user",
+        "tags": [
+          "follows"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "username",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "following": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    }
+                  },
+                  "required": [
+                    "following"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not following",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{username}/followers": {
+      "get": {
+        "summary": "Paginated followers list (keyset)",
+        "tags": [
+          "follows"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "username",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Opaque base64url cursor from a prior response"
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "description": "Page size (1–50)"
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/UserProfile"
+                      }
+                    },
+                    "cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "cursor",
+                    "has_more"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{username}/following": {
+      "get": {
+        "summary": "Paginated following list (keyset)",
+        "tags": [
+          "follows"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "username",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Opaque base64url cursor from a prior response"
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "description": "Page size (1–50)"
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/UserProfile"
+                      }
+                    },
+                    "cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "cursor",
+                    "has_more"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gyms": {
+      "get": {
+        "summary": "List all gyms",
+        "tags": [
+          "gyms"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Gym"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gyms/geocode": {
+      "get": {
+        "summary": "Geocode a free-text address to lat/lng",
+        "tags": [
+          "gyms"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 2
+            },
+            "required": true,
+            "name": "address",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "lat": {
+                          "type": "number"
+                        },
+                        "lng": {
+                          "type": "number"
+                        },
+                        "formatted_address": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "lat",
+                        "lng",
+                        "formatted_address"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gyms/nearby": {
+      "get": {
+        "summary": "Gyms within `radius` km of a point",
+        "tags": [
+          "gyms"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": -90,
+              "maximum": 90
+            },
+            "required": false,
+            "name": "lat",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": -180,
+              "maximum": 180
+            },
+            "required": false,
+            "name": "lng",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            },
+            "required": false,
+            "name": "radius",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 10
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/NearbyGym"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gyms/{gymId}": {
+      "get": {
+        "summary": "Gym detail + aggregate stats",
+        "tags": [
+          "gyms"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-0000-0000-0000-000000000001"
+            },
+            "required": true,
+            "name": "gymId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "gym": {
+                      "$ref": "#/components/schemas/Gym"
+                    }
+                  },
+                  "required": [
+                    "gym"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gyms/{gymId}/problems": {
+      "get": {
+        "summary": "Gym problems (active/retired/all), keyset paginated",
+        "tags": [
+          "gyms"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-0000-0000-0000-000000000001"
+            },
+            "required": true,
+            "name": "gymId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "retired",
+                "all"
+              ],
+              "default": "active"
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Problem"
+                      }
+                    },
+                    "cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "cursor",
+                    "has_more"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gyms/{gymId}/problems/retired": {
+      "get": {
+        "summary": "Retired problems grouped by retirement month",
+        "tags": [
+          "gyms"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-0000-0000-0000-000000000001"
+            },
+            "required": true,
+            "name": "gymId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "month": {
+                            "type": "string"
+                          },
+                          "problems": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/components/schemas/Problem"
+                            }
+                          }
+                        },
+                        "required": [
+                          "month",
+                          "problems"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feed": {
+      "get": {
+        "summary": "Personal feed — ascents from users you follow",
+        "description": "Uses keyset pagination on (logged_at DESC, id DESC). See ADR 0004.",
+        "tags": [
+          "feed"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Opaque base64url cursor from a prior response"
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "description": "Page size (1–50)"
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/FeedItem"
+                      }
+                    },
+                    "cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "cursor",
+                    "has_more"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feed/discover": {
+      "get": {
+        "summary": "Discovery feed — recent public ascents",
+        "tags": [
+          "feed"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Opaque base64url cursor from a prior response"
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "description": "Page size (1–50)"
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/FeedItem"
+                      }
+                    },
+                    "cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "cursor",
+                    "has_more"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feed/gym/{gymId}": {
+      "get": {
+        "summary": "Recent public ascents at a specific gym",
+        "tags": [
+          "feed"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-0000-0000-0000-000000000001"
+            },
+            "required": true,
+            "name": "gymId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Opaque base64url cursor from a prior response"
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "description": "Page size (1–50)"
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/FeedItem"
+                      }
+                    },
+                    "cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "cursor",
+                    "has_more"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uploads": {
+      "post": {
+        "summary": "Submit photos for vision processing",
+        "description": "Multipart body with one or more photo files. Enqueues a BullMQ vision job; see ADR 0005 for the async contract. Rate limited by uploadLimiter (20/min).",
+        "tags": [
+          "uploads"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "colour": {
+                    "type": "string"
+                  },
+                  "gym_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "11111111-0000-0000-0000-000000000001"
+                  },
+                  "photos": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "1+ image files",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "colour",
+                  "gym_id",
+                  "photos"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Accepted; poll /uploads/{id}/status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "uploadId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "example": "11111111-0000-0000-0000-000000000001"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "uploadId",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uploads/{uploadId}/status": {
+      "get": {
+        "summary": "Poll vision pipeline state for an upload",
+        "tags": [
+          "uploads"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-0000-0000-0000-000000000001"
+            },
+            "required": true,
+            "name": "uploadId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "processing",
+                        "awaiting_confirmation",
+                        "complete",
+                        "matched",
+                        "unmatched",
+                        "failed"
+                      ]
+                    },
+                    "similarityScore": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "matchedProblemId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uuid",
+                      "example": "11111111-0000-0000-0000-000000000001"
+                    },
+                    "modelUrl": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "candidateProblems": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Problem"
+                      }
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "similarityScore",
+                    "matchedProblemId",
+                    "modelUrl",
+                    "candidateProblems"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Upload belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uploads/{uploadId}/confirm": {
+      "post": {
+        "summary": "Confirm the match (or create a new problem) and log an ascent",
+        "tags": [
+          "uploads"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-0000-0000-0000-000000000001"
+            },
+            "required": true,
+            "name": "uploadId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "problemId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "new"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "11111111-0000-0000-0000-000000000001"
+                      }
+                    ]
+                  },
+                  "user_grade": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 10
+                  },
+                  "rating": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "notes": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 280
+                  },
+                  "video_url": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uri"
+                  },
+                  "visibility": {
+                    "type": "string",
+                    "enum": [
+                      "public",
+                      "friends",
+                      "private"
+                    ],
+                    "default": "public"
+                  }
+                },
+                "required": [
+                  "problemId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Confirmed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ascentId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "example": "11111111-0000-0000-0000-000000000001"
+                    },
+                    "problemId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "example": "11111111-0000-0000-0000-000000000001"
+                    }
+                  },
+                  "required": [
+                    "ascentId",
+                    "problemId"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Upload not in a confirmable state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uploads/{uploadId}/dispute": {
+      "post": {
+        "summary": "Open a match dispute on a matched upload",
+        "tags": [
+          "uploads"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-0000-0000-0000-000000000001"
+            },
+            "required": true,
+            "name": "uploadId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Opened",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "disputeId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "example": "11111111-0000-0000-0000-000000000001"
+                    }
+                  },
+                  "required": [
+                    "disputeId"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No matched problem, or open dispute already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ascents/{ascentId}": {
+      "get": {
+        "summary": "Ascent detail with joined problem and gym",
+        "tags": [
+          "ascents"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-0000-0000-0000-000000000001"
+            },
+            "required": true,
+            "name": "ascentId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ascents": {
+      "post": {
+        "summary": "Log an ascent directly on a known problem (skips the upload flow)",
+        "tags": [
+          "ascents"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "problem_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "11111111-0000-0000-0000-000000000001"
+                  },
+                  "user_grade": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 10
+                  },
+                  "rating": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "notes": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 280
+                  },
+                  "visibility": {
+                    "type": "string",
+                    "enum": [
+                      "public",
+                      "friends",
+                      "private"
+                    ],
+                    "default": "public"
+                  }
+                },
+                "required": [
+                  "problem_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ascentId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "example": "11111111-0000-0000-0000-000000000001"
+                    },
+                    "problemId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "example": "11111111-0000-0000-0000-000000000001"
+                    }
+                  },
+                  "required": [
+                    "ascentId",
+                    "problemId"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/problems/{problemId}": {
+      "get": {
+        "summary": "Problem detail + ascent summary + grade distribution",
+        "tags": [
+          "problems"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-0000-0000-0000-000000000001"
+            },
+            "required": true,
+            "name": "problemId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "problem": {
+                      "$ref": "#/components/schemas/Problem"
+                    }
+                  },
+                  "required": [
+                    "problem"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/problems/{problemId}/ascents": {
+      "get": {
+        "summary": "Paginated ascents on a problem (visibility-filtered)",
+        "tags": [
+          "problems"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-0000-0000-0000-000000000001"
+            },
+            "required": true,
+            "name": "problemId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Opaque base64url cursor from a prior response"
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "description": "Page size (1–50)"
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "example": "11111111-0000-0000-0000-000000000001"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "flash",
+                              "send",
+                              "attempt"
+                            ]
+                          },
+                          "user_grade": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "rating": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
+                          "notes": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "logged_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "example": "2026-04-09T12:34:56.000Z"
+                          },
+                          "user": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "example": "11111111-0000-0000-0000-000000000001"
+                              },
+                              "username": {
+                                "type": "string"
+                              },
+                              "display_name": {
+                                "type": "string"
+                              },
+                              "avatar_url": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "username",
+                              "display_name",
+                              "avatar_url"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "type",
+                          "user_grade",
+                          "rating",
+                          "notes",
+                          "logged_at",
+                          "user"
+                        ]
+                      }
+                    },
+                    "cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "cursor",
+                    "has_more"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/disputes/{disputeId}/vote": {
+      "post": {
+        "summary": "Vote on an open match dispute (requires ascent on disputed problem)",
+        "tags": [
+          "disputes"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-0000-0000-0000-000000000001"
+            },
+            "required": true,
+            "name": "disputeId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "vote": {
+                    "type": "string",
+                    "enum": [
+                      "confirm",
+                      "split"
+                    ]
+                  }
+                },
+                "required": [
+                  "vote"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "disputeId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "example": "11111111-0000-0000-0000-000000000001"
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "open",
+                            "resolved_confirm",
+                            "resolved_split"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "open"
+                          ]
+                        }
+                      ]
+                    },
+                    "votes_confirm": {
+                      "type": "integer"
+                    },
+                    "votes_split": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "disputeId",
+                    "status",
+                    "votes_confirm",
+                    "votes_split"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Voter has no ascent on the disputed problem",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Dispute already resolved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search": {
+      "get": {
+        "summary": "Search users and/or gyms by substring (min 2 chars)",
+        "tags": [
+          "search"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 2
+            },
+            "required": true,
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "user",
+                "gym",
+                "all"
+              ],
+              "default": "all"
+            },
+            "required": false,
+            "name": "type",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "query": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "user"
+                                ]
+                              },
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "example": "11111111-0000-0000-0000-000000000001"
+                              },
+                              "username": {
+                                "type": "string"
+                              },
+                              "display_name": {
+                                "type": "string"
+                              },
+                              "avatar_url": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "id",
+                              "username",
+                              "display_name",
+                              "avatar_url"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "gym"
+                                ]
+                              },
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "example": "11111111-0000-0000-0000-000000000001"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "city": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "id",
+                              "name",
+                              "city"
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "query",
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/push-tokens": {
+      "post": {
+        "summary": "Register an Expo push token for the authenticated user",
+        "tags": [
+          "push-tokens"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "token"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove an Expo push token",
+        "tags": [
+          "push-tokens"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "token",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/run-retirement": {
+      "post": {
+        "summary": "Trigger the nightly retirement sweep (cron entry point)",
+        "tags": [
+          "internal"
+        ],
+        "security": [
+          {
+            "InternalSecret": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "retired": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "retired"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Invalid or missing X-Internal-Secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}
