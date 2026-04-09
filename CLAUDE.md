@@ -31,6 +31,8 @@ Social bouldering app for iOS and Android. Users log climbs, follow friends, and
 /docs            Specs, ADRs, SQL query references
 ```
 
+Each subdirectory (`api/`, `mobile/`, `vision/`, `db/`, `test/`) has its own `CLAUDE.md` with directory-specific details (commands, architecture, constraints). Refer to those when working within a single directory.
+
 ---
 
 ## Key commands
@@ -79,7 +81,6 @@ docker compose -f docker-compose.test.yml up --build
 - `REDIS_URL` — Redis connection string (e.g. `redis://localhost:6379`)
 - `SUPABASE_URL` — Supabase project URL (e.g. `https://[project-ref].supabase.co`)
 - `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (from dashboard → Settings → API)
-- `SUPABASE_JWT_SECRET` — Supabase JWT secret (from dashboard → Settings → API → JWT Secret)
 - `INTERNAL_SECRET` — shared secret used by vision worker when POSTing results back to the API
 - `PORT` — defaults to `3001`
 - `VISION_SERVICE_URL` — base URL of the Python vision service (e.g. `http://localhost:8000`); required by the BullMQ worker
@@ -113,6 +114,7 @@ docker compose -f docker-compose.test.yml up --build
 - Feed pagination is **keyset-based** (not offset). Cursor is an ascent ID; the query uses a subquery to look up `logged_at` and paginates by `(logged_at DESC, id DESC)`. Reference SQL is in `docs/queries/feed.sql`.
 - Rate limiting: three tiers — `defaultLimiter` (100/min, applied globally), `authLimiter` (10/min, auth routes), `uploadLimiter` (20/min, POST /uploads). Apply the correct limiter when adding new routes.
 - Sentry error tracking is configured in `api/src/lib/sentry.ts`. The Sentry error handler must be registered **after** routes but **before** the global `errorHandler` middleware (see `api/src/index.ts`).
+- **3D model pipeline**: Vision Stage 6 runs MiDaS depth estimation on the first uploaded photo, generates a relief mesh (GLB format) via `trimesh`, and returns the GLB as base64 in the response. The BullMQ worker uploads the GLB to storage (`models` bucket) and sets `problems.model_url`. The mobile app displays it using `HolographicModelViewer` (expo-gl + Three.js) with a Fresnel rim glow holographic shader. Stage 6 is non-fatal — failure falls back to `model_url = null` and the 2D-only experience.
 
 ---
 
@@ -139,7 +141,7 @@ Key shared types beyond the tables: `FeedItem` (ascent + problem + user + gym ag
 - React Native: functional components with hooks. No class components.
 - API routes: thin controllers, logic in service layer (`/services`). Never put business logic in route handlers.
 - Input validation: use Zod in route handlers before calling services. The global `errorHandler` also catches `ZodError` and returns a 400.
-- Two auth middlewares: `requireAuth` (rejects 401 if no/invalid Supabase JWT, attaches `req.user` with `userId`) and `optionalAuth` (attaches `req.user` if valid token, never rejects — for public routes where auth enriches but isn't required) are in `api/src/middleware/auth.ts`. The API verifies Supabase JWTs using `SUPABASE_JWT_SECRET`; `userId` comes from the JWT `sub` claim. No `requireVerified` middleware — Supabase Auth ensures phone is verified before issuing a session.
+- Two auth middlewares: `requireAuth` (rejects 401 if no/invalid Supabase JWT, attaches `req.user` with `userId`) and `optionalAuth` (attaches `req.user` if valid token, never rejects — for public routes where auth enriches but isn't required) are in `api/src/middleware/auth.ts`. The API verifies Supabase JWTs using JWKS (`createRemoteJWKSet` from `jose`, fetching `{SUPABASE_URL}/auth/v1/.well-known/jwks.json`); `userId` comes from the JWT `sub` claim. Tokens are ES256 (asymmetric), not HS256. No `requireVerified` middleware — Supabase Auth ensures phone is verified before issuing a session.
 - Errors: throw `AppError` (from `api/src/middleware/errorHandler.ts`) in services; the global `errorHandler` middleware catches it and returns `{ error: { code, message } }`.
 - Push notifications use Expo SDK (`api/src/services/pushService.ts`).
 - Never commit `.env` files. Use `.env.example` to document required vars.
@@ -189,7 +191,7 @@ Key shared types beyond the tables: `FeedItem` (ascent + problem + user + gym ag
 - The pgvector IVFFlat index (`idx_problems_hold_vector`, migration 004) uses `lists = 100`, tuned for up to ~10k active problems per gym. Pre-filtering by `gym_id + colour` (via `idx_problems_gym_colour`) is required before ANN queries to keep the index effective.
 - The `followsRouter` is mounted at `/users` (not `/follows`) — follow/unfollow endpoints live under `/users/:id/follow` etc. See `api/src/routes/index.ts`.
 - Docker Compose runs 4 services: `redis`, `api`, `vision`, and `vision-worker` (a separate container from the same API image that only runs the BullMQ worker). The vision-worker depends on both redis and vision.
-- Auth is handled by Supabase Auth (phone + password, SMS OTP via Twilio). The API validates Supabase JWTs using `SUPABASE_JWT_SECRET`. Mobile calls Supabase Auth directly for signup/login/OTP verification. A Postgres trigger on `auth.users` auto-inserts into `public.users`. Phone verification is implicit — Supabase won't issue a session until OTP is verified.
+- Auth is handled by Supabase Auth (phone + password, SMS OTP via Twilio). The API validates Supabase JWTs using JWKS (ES256 tokens verified via `SUPABASE_URL`'s JWKS endpoint — no shared secret). Mobile calls Supabase Auth directly for signup/login/OTP verification. A Postgres trigger on `auth.users` auto-inserts into `public.users`. Phone verification is implicit — Supabase won't issue a session until OTP is verified.
 - Phone numbers are Canada-only for now: mobile UI collects 10 digits, app auto-prepends `+1`. Stored in E.164 format.
 - Storage backend is toggled by `STORAGE_BACKEND=s3` env var. Default is Supabase Storage. When `s3`, the service uses `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_PUBLIC_URL`. The test environment always uses S3 (MinIO). Both backends expose `uploadBase64Image` and `uploadBuffer` from `api/src/services/storage.ts` — never call storage backends directly.
 - The `push_tokens` table stores Expo push tokens per user (unique constraint).

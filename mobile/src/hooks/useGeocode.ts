@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import * as Location from 'expo-location';
+import { api } from '../lib/api';
 
 interface GeocodedLocation {
   lat: number;
@@ -14,13 +14,10 @@ export function useGeocode() {
     setIsGeocoding(true);
     setError(null);
     try {
-      const results = await Location.geocodeAsync(address);
-      if (results.length === 0) {
-        setError('No results found for that address');
-        return null;
-      }
-      const { latitude, longitude } = results[0]!;
-      return { lat: latitude, lng: longitude };
+      const res = await api.get<{ data: GeocodedLocation }>(
+        `/gyms/geocode?address=${encodeURIComponent(address)}`,
+      );
+      return res.data;
     } catch {
       setError('Could not geocode address. Check your connection.');
       return null;

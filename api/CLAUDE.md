@@ -44,7 +44,7 @@ API does NOT handle registration or login — Supabase Auth does that on mobile.
 - `optionalAuth` — attaches `req.user` if valid, never rejects
 - No `requireVerified` — phone verification is implicit in Supabase Auth
 
-JWT secret: `SUPABASE_JWT_SECRET` env var (from Supabase dashboard → Settings → API).
+JWT verification uses JWKS: `createRemoteJWKSet` from `jose` fetches keys from `{SUPABASE_URL}/auth/v1/.well-known/jwks.json`. Tokens are ES256 (asymmetric). Requires `SUPABASE_URL` env var (not a shared secret).
 
 ## Rate Limiting
 

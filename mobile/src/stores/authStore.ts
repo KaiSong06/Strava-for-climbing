@@ -21,6 +21,18 @@ interface AuthState {
   logout: () => Promise<void>;
 }
 
+/** Fetch user profile from the API and store it. Lazy-imports api to avoid circular dep. */
+function fetchProfile() {
+  import('../lib/api').then(({ api }) =>
+    api
+      .get<AuthUser>('/users/me')
+      .then((user) => useAuthStore.getState().updateUser(user))
+      .catch(() => {
+        // Profile fetch failed — user object stays null until next attempt
+      }),
+  );
+}
+
 export const useAuthStore = create<AuthState>()((set, get) => ({
   session: null,
   user: null,
@@ -39,8 +51,14 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       _hasHydrated: true,
     });
 
+    // Fetch user profile if we already have a session
+    if (session) {
+      fetchProfile();
+    }
+
     // Listen for auth state changes (login, logout, token refresh)
     supabase.auth.onAuthStateChange((_event, newSession) => {
+      const hadSession = !!get().session;
       set({
         session: newSession,
         accessToken: newSession?.access_token ?? null,
@@ -48,6 +66,14 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       // Clear pending verification when a session arrives
       if (newSession && get().pendingVerification) {
         set({ pendingVerification: null });
+      }
+      // Fetch profile when a new session is established (login / OTP verified)
+      if (newSession && !hadSession) {
+        fetchProfile();
+      }
+      // Clear user on logout
+      if (!newSession) {
+        set({ user: null });
       }
     });
   },

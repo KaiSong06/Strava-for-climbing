@@ -24,12 +24,14 @@ export interface ProblemWithGym {
   total_sends: number;
   first_upload_at: string;
   gym_name: string;
+  model_url: string | null;
 }
 
 export interface ProblemDetail extends ProblemWithGym {
   retired_at: string | null;
   total_attempts: number;
   flash_count: number;
+  model_url: string | null;
   ascent_summary: {
     total_sends: number;
     total_attempts: number;
@@ -43,15 +45,16 @@ export async function createProblem(
   gymId: string,
   colour: string,
   holdVector: number[],
+  modelUrl?: string | null,
 ): Promise<string> {
   const padded = padVector(holdVector);
   const vectorStr = `[${padded.join(',')}]`;
 
   const { rows } = await pool.query<{ id: string }>(
-    `INSERT INTO problems (gym_id, colour, hold_vector, status, first_upload_at)
-     VALUES ($1, $2, $3::vector, 'active', NOW())
+    `INSERT INTO problems (gym_id, colour, hold_vector, status, first_upload_at, model_url)
+     VALUES ($1, $2, $3::vector, 'active', NOW(), $4)
      RETURNING id`,
-    [gymId, colour, vectorStr],
+    [gymId, colour, vectorStr, modelUrl ?? null],
   );
   if (!rows[0]) throw new AppError('INTERNAL_ERROR', 'Failed to create problem', 500);
   return rows[0].id;
@@ -60,7 +63,7 @@ export async function createProblem(
 export async function getProblemWithGym(problemId: string): Promise<ProblemWithGym> {
   const { rows } = await pool.query<ProblemWithGym>(
     `SELECT p.id, p.gym_id, p.colour, p.status, p.consensus_grade, p.total_sends,
-            p.first_upload_at, g.name AS gym_name
+            p.first_upload_at, p.model_url, g.name AS gym_name
      FROM problems p
      JOIN gyms g ON g.id = p.gym_id
      WHERE p.id = $1`,
@@ -80,6 +83,7 @@ export async function getProblemDetail(problemId: string): Promise<ProblemDetail
     total_sends: number;
     first_upload_at: string;
     retired_at: string | null;
+    model_url: string | null;
     gym_name: string;
     total_attempts: number;
     flash_count: number;
@@ -87,7 +91,7 @@ export async function getProblemDetail(problemId: string): Promise<ProblemDetail
 
   const { rows } = await pool.query<Row>(
     `SELECT p.id, p.gym_id, p.colour, p.status, p.consensus_grade, p.total_sends,
-            p.first_upload_at, p.retired_at, g.name AS gym_name,
+            p.first_upload_at, p.retired_at, p.model_url, g.name AS gym_name,
             COUNT(a.id)::int AS total_attempts,
             COUNT(a.id) FILTER (WHERE a.type = 'flash')::int AS flash_count
      FROM problems p
@@ -123,6 +127,7 @@ export async function getProblemDetail(problemId: string): Promise<ProblemDetail
     total_sends: sendCount,
     first_upload_at: r.first_upload_at,
     retired_at: r.retired_at,
+    model_url: r.model_url,
     gym_name: r.gym_name,
     total_attempts: r.total_attempts,
     flash_count: r.flash_count,

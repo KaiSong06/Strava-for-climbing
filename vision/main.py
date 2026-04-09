@@ -59,6 +59,7 @@ class ProcessResponse(BaseModel):
     hold_count: int
     wall_bbox: WallBbox
     debug_image_url: str | None
+    model_glb_base64: str | None
 
 
 # ── Endpoints ──────────────────────────────────────────────────────────────────

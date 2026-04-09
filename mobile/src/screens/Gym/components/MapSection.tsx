@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
+import { typography } from '@/src/theme/typography';
 import { darkMapStyle } from './mapStyle';
 import type { Gym } from '../../../../../shared/types';
 
@@ -163,15 +164,13 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
   },
   searchInput: {
+    ...typography.bodyMd,
     flex: 1,
-    fontFamily: 'Inter_400Regular',
-    fontSize: 14,
     color: colors.onSurface,
     padding: 0,
   },
   errorText: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 12,
+    ...typography.bodySm,
     color: colors.error,
     marginTop: spacing.xs,
     marginLeft: spacing.sm,

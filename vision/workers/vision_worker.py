@@ -5,7 +5,9 @@ Called by the FastAPI /process endpoint in main.py.
 Models (SAM, MiDaS) are loaded once at service startup and passed in;
 never re-loaded per request.
 """
+import base64
 import colorsys
+import io
 import logging
 import os
 from typing import Any
@@ -270,6 +272,191 @@ def _build_hold_vector(centroids: list[tuple[float, float]]) -> list[float]:
     return flat[:200]
 
 
+# ── Stage 6: Depth estimation ────────────────────────────────────────────────
+
+
+def _run_midas_depth(
+    image: np.ndarray,
+    midas_model: Any,
+    midas_transform: Any,
+) -> np.ndarray:
+    """
+    Run MiDaS small on a single image and return a normalised [0,1] depth map.
+    The depth map has the same spatial dimensions as the input image.
+    """
+    import torch
+
+    device = next(midas_model.parameters()).device
+
+    input_batch = midas_transform(image).to(device)
+    with torch.no_grad():
+        prediction = midas_model(input_batch)
+        prediction = torch.nn.functional.interpolate(
+            prediction.unsqueeze(1),
+            size=image.shape[:2],
+            mode="bicubic",
+            align_corners=False,
+        ).squeeze()
+
+    depth = prediction.cpu().numpy()
+
+    # Normalise to [0, 1]
+    d_min, d_max = depth.min(), depth.max()
+    if d_max - d_min > 1e-6:
+        depth = (depth - d_min) / (d_max - d_min)
+    else:
+        depth = np.zeros_like(depth)
+
+    return depth.astype(np.float32)
+
+
+# ── Stage 6b: GLB mesh generation ────────────────────────────────────────────
+
+
+def _hex_to_rgb_floats(hex_color: str) -> tuple[float, float, float]:
+    """Convert '#RRGGBB' to (r, g, b) floats in [0, 1]."""
+    hex_color = hex_color.lstrip("#")
+    r = int(hex_color[0:2], 16) / 255.0
+    g = int(hex_color[2:4], 16) / 255.0
+    b = int(hex_color[4:6], 16) / 255.0
+    return r, g, b
+
+
+def _generate_glb_model(
+    image: np.ndarray,
+    depth_map: np.ndarray,
+    hold_centroids: list[tuple[float, float]],
+    wall_bbox: dict[str, int],
+    hold_colour_hex: str,
+) -> bytes:
+    """
+    Generate a GLB mesh from the depth map and wall photo.
+
+    Creates a relief mesh where depth pushes vertices forward,
+    UV-maps the photo texture onto the surface, and adds small
+    sphere markers at each detected hold position.
+
+    Returns the GLB binary.
+    """
+    import trimesh
+
+    h, w = depth_map.shape[:2]
+    bx, by, bw, bh = wall_bbox["x"], wall_bbox["y"], wall_bbox["w"], wall_bbox["h"]
+
+    # Crop image and depth to wall bbox
+    crop_y1 = max(0, by)
+    crop_y2 = min(h, by + bh)
+    crop_x1 = max(0, bx)
+    crop_x2 = min(w, bx + bw)
+
+    wall_img = image[crop_y1:crop_y2, crop_x1:crop_x2]
+    wall_depth = depth_map[crop_y1:crop_y2, crop_x1:crop_x2]
+
+    wh, ww = wall_img.shape[:2]
+    if wh < 4 or ww < 4:
+        raise ValueError("Wall crop too small for mesh generation")
+
+    # Subsample to ~270 max dimension (every Nth pixel)
+    step = max(1, max(wh, ww) // 270)
+    grid_y = np.arange(0, wh, step)
+    grid_x = np.arange(0, ww, step)
+    gy, gx = np.meshgrid(grid_y, grid_x, indexing="ij")
+
+    rows, cols = gy.shape
+    depth_samples = wall_depth[gy, gx]
+
+    # Relief scale — controls how "deep" the 3D effect looks
+    relief_scale = 0.1
+
+    # Build vertices: x in [0, aspect], y in [0, 1], z = depth * relief
+    aspect = ww / wh
+    vertices = np.zeros((rows * cols, 3), dtype=np.float32)
+    uvs = np.zeros((rows * cols, 2), dtype=np.float32)
+
+    for r in range(rows):
+        for c in range(cols):
+            idx = r * cols + c
+            x_norm = gx[r, c] / ww
+            y_norm = gy[r, c] / wh
+            vertices[idx] = [
+                x_norm * aspect,
+                (1.0 - y_norm),  # flip y so bottom of wall is y=0
+                depth_samples[r, c] * relief_scale,
+            ]
+            uvs[idx] = [x_norm, y_norm]
+
+    # Build triangle faces from grid
+    faces = []
+    for r in range(rows - 1):
+        for c in range(cols - 1):
+            tl = r * cols + c
+            tr = r * cols + (c + 1)
+            bl = (r + 1) * cols + c
+            br = (r + 1) * cols + (c + 1)
+            faces.append([tl, bl, tr])
+            faces.append([tr, bl, br])
+
+    faces_arr = np.array(faces, dtype=np.int64)
+
+    # Create texture from wall crop (512x512 JPEG, quality 70)
+    from PIL import Image as PILImage
+
+    tex_img = PILImage.fromarray(wall_img)
+    tex_img = tex_img.resize((512, 512), PILImage.LANCZOS)
+    tex_buf = io.BytesIO()
+    tex_img.save(tex_buf, format="JPEG", quality=70)
+    tex_buf.seek(0)
+
+    # Create trimesh PBR material with texture
+    material = trimesh.visual.material.PBRMaterial(
+        baseColorTexture=PILImage.open(tex_buf),
+        metallicFactor=0.0,
+        roughnessFactor=0.6,
+    )
+
+    # Assign UV visual
+    wall_mesh = trimesh.Trimesh(
+        vertices=vertices,
+        faces=faces_arr,
+        process=False,
+    )
+    wall_mesh.visual = trimesh.visual.TextureVisuals(
+        uv=uvs,
+        material=material,
+    )
+
+    # Build scene with wall mesh
+    scene = trimesh.Scene()
+    scene.add_geometry(wall_mesh, node_name="wall_mesh")
+
+    # Add hold markers as small spheres
+    hr, hg, hb = _hex_to_rgb_floats(hold_colour_hex)
+    hold_material = trimesh.visual.material.PBRMaterial(
+        baseColorFactor=[int(hr * 255), int(hg * 255), int(hb * 255), 255],
+        metallicFactor=0.3,
+        roughnessFactor=0.2,
+        emissiveFactor=[int(hr * 200), int(hg * 200), int(hb * 200)],
+    )
+
+    for i, (cx, cy) in enumerate(hold_centroids):
+        # cx, cy are normalised [0,1] relative to wall bbox
+        # Map to mesh coordinate space
+        px = int(cx * ww)
+        py = int((1.0 - cy) * wh)  # cy is inverted (0=floor, 1=top)
+        px = max(0, min(ww - 1, px))
+        py = max(0, min(wh - 1, py))
+
+        z = float(wall_depth[py, px]) * relief_scale + 0.01  # slightly in front
+        sphere = trimesh.creation.icosphere(subdivisions=2, radius=0.012)
+        sphere.apply_translation([cx * aspect, cy, z])
+        sphere.visual = trimesh.visual.TextureVisuals(material=hold_material)
+        scene.add_geometry(sphere, node_name=f"hold_{i}")
+
+    # Export to GLB
+    glb_bytes: bytes = scene.export(file_type="glb")
+    return glb_bytes
+
+
 # ── Main pipeline entry point ─────────────────────────────────────────────────
 
 
@@ -351,7 +538,27 @@ def process_upload(
         "h": wall_bbox["h"] / ref_h,
     }
 
-    # Stage 6: depth estimation — TODO (requires 3+ photos; skip for MVP)
+    # Stage 6: depth estimation + 3D model generation
+    model_glb_base64: str | None = None
+    try:
+        depth_map = _run_midas_depth(images[0], midas_model, midas_transform)
+        logger.info("[pipeline] stage 6: MiDaS depth estimated upload=%s", upload_id)
+
+        glb_bytes = _generate_glb_model(
+            image=images[0],
+            depth_map=depth_map,
+            hold_centroids=deduped,
+            wall_bbox=wall_bbox,
+            hold_colour_hex=colour,
+        )
+        model_glb_base64 = base64.b64encode(glb_bytes).decode("ascii")
+        logger.info(
+            "[pipeline] stage 6: GLB generated upload=%s size=%dKB",
+            upload_id,
+            len(glb_bytes) // 1024,
+        )
+    except Exception:
+        logger.exception("[pipeline] stage 6 failed (non-fatal) upload=%s", upload_id)
 
     logger.info("[pipeline] done upload=%s holds=%d", upload_id, hold_count)
     return {
@@ -359,4 +566,5 @@ def process_upload(
         "hold_count": hold_count,
         "wall_bbox": wall_bbox_norm,
         "debug_image_url": None,  # TODO: annotated overlay stored in S3
+        "model_glb_base64": model_glb_base64,
     }

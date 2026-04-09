@@ -79,6 +79,14 @@ Always import from `src/theme/` — never hardcode values:
 - States: idle → uploading → processing → matched/awaiting_confirmation/failed → confirmed
 - `uploadService.ts` handles multipart upload, polling (2s interval), and confirm POST.
 
+## 3D Holographic Viewer
+
+`src/components/HolographicModelViewer/` — renders GLB climbing wall models with a holographic aesthetic using `expo-gl` + `expo-three` + Three.js.
+- Loads GLB from `problem.model_url` (when non-null)
+- Custom Fresnel rim glow shader (primary blue #a8c8ff), semi-transparent wall texture, emissive hold markers
+- Auto-rotation with touch orbit controls, ambient particles
+- Shown on Problem Detail screen when `model_url` exists; graceful degradation when unavailable
+
 ## Path Alias
 
 `@/*` maps to the mobile root (e.g., `@/src/stores/authStore`).

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Holographic Climbing Model Viewer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #131313; overflow: hidden; }
+    canvas { display: block; }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const WIDTH = 800;
+const HEIGHT = 600;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x131313);
+
+const camera = new THREE.PerspectiveCamera(45, WIDTH / HEIGHT, 0.1, 100);
+camera.position.set(0, 0.3, 2.5);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setSize(WIDTH, HEIGHT);
+renderer.setPixelRatio(1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.autoRotate = true;
+controls.autoRotateSpeed = 2;
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.target.set(0, 0, 0);
+
+const ambientLight = new THREE.AmbientLight(0x444466, 0.4);
+scene.add(ambientLight);
+
+const dirLight = new THREE.DirectionalLight(0xa8c8ff, 0.8);
+dirLight.position.set(-2, 3, 1);
+scene.add(dirLight);
+
+const backLight = new THREE.DirectionalLight(0xa8c8ff, 0.3);
+backLight.position.set(1, -1, -2);
+scene.add(backLight);
+
+// Holographic wall shader
+const holoVertexShader = `
+  varying vec3 vNormal;
+  varying vec3 vViewDir;
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    vec4 worldPos = modelMatrix * vec4(position, 1.0);
+    vNormal = normalize(normalMatrix * normal);
+    vViewDir = normalize(cameraPosition - worldPos.xyz);
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const holoFragmentShader = `
+  uniform sampler2D baseTexture;
+  uniform vec3 rimColor;
+  uniform vec3 baseColor;
+  uniform float rimPower;
+  uniform float textureOpacity;
+  uniform float baseOpacity;
+  varying vec3 vNormal;
+  varying vec3 vViewDir;
+  varying vec2 vUv;
+  void main() {
+    float fresnel = 1.0 - max(dot(vNormal, vViewDir), 0.0);
+    float rim = pow(fresnel, rimPower);
+    vec4 texColor = texture2D(baseTexture, vUv);
+    vec3 color = baseColor * (1.0 - textureOpacity) + texColor.rgb * textureOpacity;
+    color += rimColor * rim * 0.8;
+    float alpha = baseOpacity + rim * 0.3;
+    alpha = clamp(alpha, 0.0, 1.0);
+    gl_FragColor = vec4(color, alpha);
+  }
+`;
+
+// Ambient floating particles
+function createParticles() {
+  const count = 60;
+  const positions = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    positions[i * 3]     = (Math.random() - 0.5) * 4;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 4;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 4;
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+  const material = new THREE.PointsMaterial({
+    color: 0xa8c8ff,
+    size: 0.02,
+    transparent: true,
+    opacity: 0.6,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+
+  const points = new THREE.Points(geometry, material);
+  scene.add(points);
+  return points;
+}
+
+const particles = createParticles();
+
+// Load GLB model
+const loader = new GLTFLoader();
+loader.load('./output_model.glb', (gltf) => {
+  const model = gltf.scene;
+
+  // Collect all meshes and sort by geometry vertex count (largest = wall)
+  const meshes = [];
+  model.traverse((child) => {
+    if (child.isMesh) {
+      meshes.push(child);
+    }
+  });
+
+  meshes.sort((a, b) => {
+    const aCount = a.geometry.getAttribute('position')?.count || 0;
+    const bCount = b.geometry.getAttribute('position')?.count || 0;
+    return bCount - aCount;
+  });
+
+  console.log(`Found ${meshes.length} meshes`);
+  meshes.forEach((m, i) => {
+    const vCount = m.geometry.getAttribute('position')?.count || 0;
+    console.log(`  Mesh ${i}: name="${m.name}", vertices=${vCount}`);
+  });
+
+  // Apply materials
+  meshes.forEach((mesh, index) => {
+    if (index === 0) {
+      // Wall mesh (largest) - holographic shader
+      let baseTexture = null;
+      if (mesh.material && mesh.material.map) {
+        baseTexture = mesh.material.map;
+      }
+      if (!baseTexture) {
+        baseTexture = new THREE.DataTexture(
+          new Uint8Array([42, 42, 42, 255]),
+          1, 1, THREE.RGBAFormat
+        );
+        baseTexture.needsUpdate = true;
+      }
+
+      const holoMaterial = new THREE.ShaderMaterial({
+        vertexShader: holoVertexShader,
+        fragmentShader: holoFragmentShader,
+        uniforms: {
+          baseTexture: { value: baseTexture },
+          rimColor: { value: new THREE.Vector3(0.659, 0.784, 1.0) },
+          baseColor: { value: new THREE.Vector3(0.165, 0.165, 0.165) },
+          rimPower: { value: 2.5 },
+          textureOpacity: { value: 0.4 },
+          baseOpacity: { value: 0.6 },
+        },
+        transparent: true,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      });
+      mesh.material = holoMaterial;
+    } else {
+      // Hold marker meshes - emissive pink
+      mesh.material = new THREE.MeshStandardMaterial({
+        color: 0xFF69B4,
+        emissive: 0xFF69B4,
+        emissiveIntensity: 0.8,
+        roughness: 0.3,
+        metalness: 0.1,
+      });
+    }
+  });
+
+  // Center and scale the model to fill ~70% of viewport
+  const box = new THREE.Box3().setFromObject(model);
+  const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const targetSize = 1.4; // ~70% of a 2-unit viewport
+  const scale = targetSize / maxDim;
+
+  model.position.sub(center);
+  model.scale.setScalar(scale);
+
+  // Recompute center after scaling
+  const newBox = new THREE.Box3().setFromObject(model);
+  const newCenter = newBox.getCenter(new THREE.Vector3());
+  controls.target.copy(newCenter);
+
+  // Position camera slightly above center, looking at model
+  camera.position.set(0, newCenter.y + 0.3, 2.2);
+  controls.update();
+
+  scene.add(model);
+  console.log('Model loaded and holographic shaders applied');
+  window.__modelLoaded = true;
+
+}, (progress) => {
+  console.log(`Loading: ${(progress.loaded / progress.total * 100).toFixed(0)}%`);
+}, (error) => {
+  console.error('Error loading GLB:', error);
+});
+
+// Animation loop
+const clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const elapsed = clock.getElapsedTime();
+
+  // Float particles gently
+  if (particles) {
+    const pos = particles.geometry.getAttribute('position');
+    for (let i = 0; i < pos.count; i++) {
+      pos.array[i * 3 + 1] += Math.sin(elapsed + i) * 0.0003;
+      pos.array[i * 3]     += Math.cos(elapsed * 0.5 + i) * 0.0002;
+    }
+    pos.needsUpdate = true;
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+animate();
+</script>
+</body>
+</html>

@@ -29,7 +29,6 @@ export {
 } from 'expo-router';
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
   initialRouteName: '(tabs)',
 };
 
@@ -38,7 +37,6 @@ SplashScreen.preventAutoHideAsync();
 
 function RootLayout() {
   const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     Inter_400Regular,
     Inter_700Bold,
     Inter_900Black,
@@ -129,14 +127,14 @@ function RootLayoutNav() {
           <Stack.Screen name="profile/[username]" options={{ title: '' }} />
           <Stack.Screen name="problem/[id]" options={{ title: 'Problem' }} />
           <Stack.Screen name="ascent/[id]" options={{ title: 'Ascent' }} />
-          <Stack.Screen name="gym/[gymId]" options={{ title: '' }} />
+          <Stack.Screen name="gym/[gymId]" options={{ headerShown: false }} />
           <Stack.Screen
             name="log-ascent/[problemId]"
             options={{ title: 'Log Ascent', presentation: 'modal' }}
           />
+          <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
           <Stack.Screen name="feed/gym" options={{ title: 'Gym Activity' }} />
           <Stack.Screen name="ascent-history/[username]" options={{ title: 'Ascent History' }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
         </Stack>
       </ThemeProvider>
     </QueryClientProvider>

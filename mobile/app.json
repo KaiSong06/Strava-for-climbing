@@ -43,8 +43,7 @@
           "color": "#ffffff"
         }
       ],
-      "@sentry/react-native",
-      "expo-location"
+      "@sentry/react-native"
     ],
     "experiments": {
       "typedRoutes": true

@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
+import { typography } from '@/src/theme/typography';
 import type { Gym } from '../../../../../shared/types';
 
 interface Props {
@@ -21,7 +22,7 @@ export function GymCard({ gym, onPress, distance_km }: Props) {
           <Text style={styles.gymName}>{gym.name}</Text>
           <Text style={styles.gymMeta}>
             {gym.city}
-            {distance_km != null ? ` \u2022 ${distance_km.toFixed(1)} km` : ''}
+            {distance_km != null ? ` \u2022 ${Number(distance_km).toFixed(1)} km` : ''}
           </Text>
         </View>
         <View style={styles.navButton}>
@@ -48,17 +49,13 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
   gymName: {
-    fontFamily: 'Inter_900Black',
-    fontSize: 22,
-    letterSpacing: -0.5,
-    lineHeight: 26,
+    ...typography.headlineMd,
     color: colors.onSurface,
     textTransform: 'uppercase',
     fontStyle: 'italic',
   },
   gymMeta: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 14,
+    ...typography.bodyMd,
     color: colors.onSurfaceVariant,
     marginTop: spacing.xs,
   },

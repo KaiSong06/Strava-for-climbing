@@ -24,7 +24,7 @@ MiDaS small is auto-cached by `torch.hub` on first startup.
 ## Endpoints
 
 - `GET /health` — returns `{"status": "ok"}`
-- `POST /process` — runs the 7-stage pipeline, returns `{hold_vector, hold_count, wall_bbox, debug_image_url}`
+- `POST /process` — runs the 7-stage pipeline, returns `{hold_vector, hold_count, wall_bbox, debug_image_url, model_glb_base64}`
 
 ## 7-Stage Pipeline (`workers/vision_worker.py`)
 
@@ -33,8 +33,8 @@ MiDaS small is auto-cached by `torch.hub` on first startup.
 3. **Hold Instance Segmentation** — connected components on colour mask → SAM ViT-B point prompts (max 50), filter by area (400px–15% of image), extract centroids
 4. **Wall Boundary Detection** — Canny edges → Hough lines → 5th/95th percentile bbox, fallback to full frame
 5. **Coordinate Normalisation** — pixel centroids → [0,1] relative to wall bbox, y inverted (0=floor, 1=top), deduplicate (threshold 0.03), sort y DESC, zero-pad to 200 dims
-6. **Depth Estimation** — TODO/skipped for MVP (MiDaS loaded but unused, requires 3+ photos)
-7. **Return Result** — dict consumed by /process endpoint
+6. **Depth Estimation + 3D Model** — MiDaS small runs on the first photo to produce a depth map; `_generate_glb_model()` builds a relief mesh (subsampled ~270x270 grid), UV-maps the wall photo as a 512x512 JPEG texture, adds hold marker spheres, and exports as GLB via `trimesh`. Non-fatal: failure falls back to `model_glb_base64 = null`.
+7. **Return Result** — dict consumed by /process endpoint; includes `model_glb_base64` (base64-encoded GLB binary, 500KB–2MB typical)
 
 ## Key Constraints
 

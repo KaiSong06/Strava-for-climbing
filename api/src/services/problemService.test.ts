@@ -4,6 +4,7 @@ import { mockQuery, resetMock } from '../test/dbMock';
 import {
   createProblem,
   getProblemWithGym,
+  getProblemDetail,
   calculateConsensusGrade,
   incrementTotalSends,
 } from './problemService';
@@ -77,6 +78,69 @@ describe('getProblemWithGym', () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
 
     await expect(getProblemWithGym('missing')).rejects.toThrow(AppError);
+  });
+});
+
+describe('getProblemDetail', () => {
+  it('should return problem detail with ascent summary and grade distribution', async () => {
+    // Main problem query
+    mockQuery.mockResolvedValueOnce({
+      rows: [{
+        id: 'p-1', gym_id: 'g-1', colour: 'red', status: 'active',
+        consensus_grade: 'V4', total_sends: 8, first_upload_at: '2026-01-01',
+        retired_at: null, gym_name: 'Beta Bloc', total_attempts: 15, flash_count: 3,
+      }],
+      rowCount: 1,
+    });
+    // Grade distribution query
+    mockQuery.mockResolvedValueOnce({
+      rows: [
+        { user_grade: 'V3', cnt: 2 },
+        { user_grade: 'V4', cnt: 5 },
+        { user_grade: 'V5', cnt: 1 },
+      ],
+      rowCount: 3,
+    });
+
+    const result = await getProblemDetail('p-1');
+
+    expect(result.id).toBe('p-1');
+    expect(result.gym_name).toBe('Beta Bloc');
+    expect(result.ascent_summary).toEqual({
+      total_sends: 8,
+      total_attempts: 15,
+      flash_count: 3,
+      grade_distribution: { V3: 2, V4: 5, V5: 1 },
+    });
+  });
+
+  it('should throw NOT_FOUND when problem does not exist', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+    try {
+      await getProblemDetail('missing');
+      fail('Expected AppError');
+    } catch (e) {
+      expect(e).toBeInstanceOf(AppError);
+      expect(e).toMatchObject({ code: 'NOT_FOUND', statusCode: 404 });
+    }
+  });
+
+  it('should return empty grade_distribution when no ascents have grades', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{
+        id: 'p-2', gym_id: 'g-1', colour: 'blue', status: 'active',
+        consensus_grade: null, total_sends: 0, first_upload_at: '2026-02-01',
+        retired_at: null, gym_name: 'Allez Up', total_attempts: 0, flash_count: 0,
+      }],
+      rowCount: 1,
+    });
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+    const result = await getProblemDetail('p-2');
+
+    expect(result.ascent_summary.grade_distribution).toEqual({});
+    expect(result.total_sends).toBe(0);
   });
 });
 

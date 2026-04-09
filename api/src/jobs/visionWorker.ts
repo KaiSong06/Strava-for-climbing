@@ -9,6 +9,7 @@ import { Worker } from 'bullmq';
 import { redisConnection, VisionJobData } from './queue';
 import { pool } from '../db/pool';
 import * as pushService from '../services/pushService';
+import { uploadBuffer } from '../services/storage';
 
 if (!process.env['VISION_SERVICE_URL']) {
   throw new Error('VISION_SERVICE_URL env var is required');
@@ -26,6 +27,7 @@ interface VisionResult {
   hold_count: number;
   wall_bbox: { x: number; y: number; w: number; h: number };
   debug_image_url: string | null;
+  model_glb_base64: string | null;
 }
 
 const worker = new Worker<VisionJobData>(
@@ -66,6 +68,18 @@ const worker = new Worker<VisionJobData>(
       JSON.stringify(result.hold_vector),
     ]);
 
+    // ── 3b. Upload GLB model to storage (if generated) ──────────────────────
+    let modelUrl: string | null = null;
+    if (result.model_glb_base64) {
+      try {
+        const glbBuffer = Buffer.from(result.model_glb_base64, 'base64');
+        modelUrl = await uploadBuffer(glbBuffer, 'model/gltf-binary', 'models');
+        console.log(`[vision] GLB uploaded for upload ${uploadId}: ${modelUrl}`);
+      } catch (err) {
+        console.error(`[vision] GLB upload failed (non-fatal):`, (err as Error).message);
+      }
+    }
+
     // ── 4. pgvector cosine similarity search ────────────────────────────────
     // Pre-filter by gym_id + colour before ANN (shrinks candidate set, keeps index fast).
     // <=> returns cosine distance [0, 2]; similarity = 1 - distance.
@@ -93,6 +107,15 @@ const worker = new Worker<VisionJobData>(
          WHERE id = $1`,
         [uploadId, topScore, topProblemId],
       );
+      // Update model_url on matched problem if it doesn't have one yet
+      if (modelUrl && topProblemId) {
+        await pool
+          .query(`UPDATE problems SET model_url = $1 WHERE id = $2 AND model_url IS NULL`, [
+            modelUrl,
+            topProblemId,
+          ])
+          .catch(() => {});
+      }
       console.log(
         `[vision] auto-matched upload ${uploadId} → problem ${topProblemId} (score=${topScore.toFixed(3)})`,
       );

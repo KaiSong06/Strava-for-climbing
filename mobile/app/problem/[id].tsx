@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -13,6 +13,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { api } from '@/src/lib/api';
 import { useAuthStore } from '@/src/stores/authStore';
+import { HolographicModelViewer } from '@/src/components/HolographicModelViewer';
+import { colors } from '@/src/theme/colors';
 import type { PaginatedResponse, AscentType } from '../../../shared/types';
 
 interface ProblemDetail {
@@ -26,6 +28,7 @@ interface ProblemDetail {
   flash_count: number;
   first_upload_at: string;
   retired_at: string | null;
+  model_url: string | null;
   gym_name: string;
   ascent_summary: {
     total_sends: number;
@@ -154,6 +157,17 @@ export default function ProblemDetailScreen() {
           {problem.status === 'retired' && <Text style={styles.retired}>Retired</Text>}
         </View>
       </View>
+
+      {/* 3D Holographic Model */}
+      {problem.model_url && (
+        <View style={styles.modelSection}>
+          <Text style={styles.modelLabel}>3D View</Text>
+          <HolographicModelViewer
+            modelUrl={problem.model_url}
+            holdColour={problem.colour}
+          />
+        </View>
+      )}
 
       {/* Stats row */}
       <View style={styles.statsRow}>
@@ -286,6 +300,18 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
 
+  modelSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  modelLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.onSurfaceVariant,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
   statsRow: {
     flexDirection: 'row',
     paddingVertical: 16,

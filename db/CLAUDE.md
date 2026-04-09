@@ -27,6 +27,7 @@ Sequential numbering: `migrations/NNN_description.sql`. Applied in alphabetical 
 | 006 | push_tokens | Creates push_tokens table for Expo push notifications |
 | 007 | email_verification | Adds email_verified to users, creates email_verification_tokens (legacy, dropped in 008) |
 | 008 | supabase_auth | Adds phone column, drops password_hash/email/email_verified columns, drops refresh_tokens/email_verification_tokens/password_reset_tokens tables |
+| 009 | edit_profile | Adds username_changed_at column, indexes |
 
 ## Seeds
 

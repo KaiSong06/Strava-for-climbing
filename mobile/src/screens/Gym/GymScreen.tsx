@@ -14,6 +14,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
+import { typography } from '@/src/theme/typography';
 import { api } from '@/src/lib/api';
 import { CruxBanner, BANNER_HEIGHT } from '@/src/components/CruxBanner';
 import { useGeocode } from '@/src/hooks/useGeocode';
@@ -138,7 +139,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingBottom: 128,
+    paddingBottom: spacing.xxl,
   },
   mapWrapper: {
     paddingHorizontal: spacing.xl,
@@ -159,19 +160,15 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   sectionTitle: {
-    fontFamily: 'Inter_900Black',
-    fontSize: 30,
-    letterSpacing: -0.6,
-    lineHeight: 32,
+    ...typography.headlineLg,
     color: colors.onSurface,
     textTransform: 'uppercase',
     fontStyle: 'italic',
   },
   sectionSubtitle: {
+    ...typography.labelMd,
     fontFamily: 'Inter_400Regular',
     fontSize: 11,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
     color: colors.onSurfaceVariant,
     marginTop: spacing.xs,
   },
@@ -188,15 +185,13 @@ const styles = StyleSheet.create({
     marginTop: spacing.xxl,
   },
   errorText: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 14,
+    ...typography.bodyMd,
     color: colors.error,
     textAlign: 'center',
     marginTop: spacing.xxl,
   },
   emptyText: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 14,
+    ...typography.bodyMd,
     color: colors.onSurfaceVariant,
     textAlign: 'center',
     marginTop: spacing.xxl,

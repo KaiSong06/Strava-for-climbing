@@ -117,10 +117,21 @@ uploadsRouter.get('/:uploadId/status', requireAuth, async (req, res, next) => {
       throw new AppError('FORBIDDEN', 'Access denied', 403);
     }
 
+    // Fetch model_url from matched problem if available
+    let modelUrl: string | null = null;
+    if (row.problem_id) {
+      const { rows: problemRows } = await pool.query<{ model_url: string | null }>(
+        `SELECT model_url FROM problems WHERE id = $1`,
+        [row.problem_id],
+      );
+      modelUrl = problemRows[0]?.model_url ?? null;
+    }
+
     res.json({
       status: row.processing_status,
       similarityScore: row.similarity_score,
       matchedProblemId: row.problem_id,
+      modelUrl,
       candidateProblems: [],
     });
   } catch (err) {

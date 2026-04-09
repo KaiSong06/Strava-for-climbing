@@ -12,6 +12,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -91,6 +92,11 @@ export default function RecordScreen() {
   const [projectPickerVisible, setProjectPickerVisible] = useState(false);
   const [colorPickerVisible, setColorPickerVisible] = useState(false);
   const [difficultyPickerVisible, setDifficultyPickerVisible] = useState(false);
+
+  // New project creation
+  const [creatingProject, setCreatingProject] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [customProjects, setCustomProjects] = useState<{ id: string; label: string }[]>([]);
 
   // Processing message cycling
   const [processingMessage, setProcessingMessage] = useState(PROCESSING_MESSAGES[0]!);
@@ -275,7 +281,7 @@ export default function RecordScreen() {
           <Pressable style={styles.pickerRow} onPress={() => setProjectPickerVisible(true)}>
             <Text style={[styles.pickerText, !project && styles.pickerPlaceholder]}>
               {project
-                ? (PROJECTS.find((p) => p.id === project)?.label ?? 'Unknown')
+                ? ([...PROJECTS, ...customProjects].find((p) => p.id === project)?.label ?? 'Unknown')
                 : 'Select Project'}
             </Text>
             <MaterialCommunityIcons name="chevron-down" size={20} color={colors.onSurfaceVariant} />
@@ -464,24 +470,76 @@ export default function RecordScreen() {
         visible={projectPickerVisible}
         transparent
         animationType="slide"
-        onRequestClose={() => setProjectPickerVisible(false)}
+        onRequestClose={() => {
+          setCreatingProject(false);
+          setNewProjectName('');
+          setProjectPickerVisible(false);
+        }}
       >
-        <Pressable style={styles.modalBackdrop} onPress={() => setProjectPickerVisible(false)}>
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={() => {
+            setCreatingProject(false);
+            setNewProjectName('');
+            setProjectPickerVisible(false);
+          }}
+        >
           <Pressable style={styles.modalSheet} onPress={() => {}}>
             <Text style={styles.modalTitle}>Project</Text>
 
-            <Pressable
-              style={styles.modalRow}
-              onPress={() => {
-                setProject('new');
-                setProjectPickerVisible(false);
-                // TODO: navigate to project creation flow
-              }}
-            >
-              <Text style={[styles.modalRowText, styles.modalRowCreate]}>+ Create New Project</Text>
-            </Pressable>
+            {creatingProject ? (
+              <View style={styles.newProjectRow}>
+                <TextInput
+                  style={styles.newProjectInput}
+                  placeholder="Project name"
+                  placeholderTextColor={colors.onSurfaceVariant}
+                  value={newProjectName}
+                  onChangeText={setNewProjectName}
+                  autoFocus
+                  returnKeyType="done"
+                  selectionColor={colors.primary}
+                  onSubmitEditing={() => {
+                    const trimmed = newProjectName.trim();
+                    if (!trimmed) return;
+                    const id = `custom-${Date.now()}`;
+                    setCustomProjects((prev) => [...prev, { id, label: trimmed }]);
+                    setProject(id);
+                    setNewProjectName('');
+                    setCreatingProject(false);
+                    setProjectPickerVisible(false);
+                  }}
+                />
+                <Pressable
+                  style={[
+                    styles.newProjectSaveButton,
+                    !newProjectName.trim() && styles.postButtonDisabled,
+                  ]}
+                  onPress={() => {
+                    const trimmed = newProjectName.trim();
+                    if (!trimmed) return;
+                    const id = `custom-${Date.now()}`;
+                    setCustomProjects((prev) => [...prev, { id, label: trimmed }]);
+                    setProject(id);
+                    setNewProjectName('');
+                    setCreatingProject(false);
+                    setProjectPickerVisible(false);
+                  }}
+                >
+                  <Text style={styles.newProjectSaveText}>Save</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable
+                style={styles.modalRow}
+                onPress={() => setCreatingProject(true)}
+              >
+                <Text style={[styles.modalRowText, styles.modalRowCreate]}>
+                  + Create New Project
+                </Text>
+              </Pressable>
+            )}
 
-            {PROJECTS.map((p) => (
+            {[...PROJECTS, ...customProjects].map((p) => (
               <Pressable
                 key={p.id}
                 style={styles.modalRow}
@@ -868,6 +926,34 @@ const styles = StyleSheet.create({
   },
   modalRowCreate: {
     color: colors.primary,
+    fontWeight: '700',
+  },
+
+  // New project creation
+  newProjectRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  newProjectInput: {
+    flex: 1,
+    backgroundColor: colors.surfaceContainer,
+    borderRadius: 8,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
+    fontSize: 16,
+    color: colors.onSurface,
+  },
+  newProjectSaveButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
+  },
+  newProjectSaveText: {
+    color: colors.onPrimary,
+    fontSize: 14,
     fontWeight: '700',
   },
 });

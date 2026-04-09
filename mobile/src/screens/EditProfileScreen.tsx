@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -13,7 +13,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '@/src/lib/api';
 import { useAuthStore } from '@/src/stores/authStore';
@@ -21,6 +22,7 @@ import type { AuthUser } from '../../../shared/types';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 import { typography } from '@/src/theme/typography';
+import { BANNER_HEIGHT } from '@/src/components/CruxBanner';
 
 type Visibility = 'public' | 'friends' | 'private';
 
@@ -37,17 +39,38 @@ export default function EditProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user, updateUser } = useAuthStore();
+  const { updateUser } = useAuthStore();
+  const accessToken = useAuthStore((s) => s.accessToken);
 
-  const [displayName, setDisplayName] = useState(user?.display_name ?? '');
-  const [username, setUsername] = useState(user?.username ?? '');
+  const { data: profile } = useQuery<AuthUser>({
+    queryKey: ['users', 'me'],
+    queryFn: () => api.get<AuthUser>('/users/me'),
+    enabled: !!accessToken,
+  });
+
+  const [displayName, setDisplayName] = useState(profile?.display_name ?? '');
+  const [username, setUsername] = useState(profile?.username ?? '');
   const [defaultVisibility, setDefaultVisibility] = useState<Visibility>(
-    user?.default_visibility ?? 'public',
+    profile?.default_visibility ?? 'public',
   );
-  const [avatarUri, setAvatarUri] = useState<string | null>(user?.avatar_url ?? null);
+  const [avatarUri, setAvatarUri] = useState<string | null>(profile?.avatar_url ?? null);
   const [avatarBase64, setAvatarBase64] = useState<string | null>(null);
-  const [homeGymId, setHomeGymId] = useState<string | null>(user?.home_gym_id ?? null);
-  const [homeGymName, setHomeGymName] = useState(user?.home_gym_name ?? '');
+  const [homeGymId, setHomeGymId] = useState<string | null>(profile?.home_gym_id ?? null);
+  const [homeGymName, setHomeGymName] = useState(profile?.home_gym_name ?? '');
+
+  // Sync form state when profile data arrives (e.g. cache miss on mount)
+  const hydrated = useRef(!!profile);
+  useEffect(() => {
+    if (profile && !hydrated.current) {
+      hydrated.current = true;
+      setDisplayName(profile.display_name);
+      setUsername(profile.username);
+      setDefaultVisibility(profile.default_visibility ?? 'public');
+      setAvatarUri(profile.avatar_url);
+      setHomeGymId(profile.home_gym_id);
+      setHomeGymName(profile.home_gym_name ?? '');
+    }
+  }, [profile]);
 
   // Gym search state
   const [gymQuery, setGymQuery] = useState('');
@@ -57,9 +80,9 @@ export default function EditProfileScreen() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const usernameLocked = !!user?.username_changed_at && isWithin30Days(user.username_changed_at);
-  const usernameUnlockDate = user?.username_changed_at
-    ? getUnlockDate(user.username_changed_at)
+  const usernameLocked = !!profile?.username_changed_at && isWithin30Days(profile.username_changed_at);
+  const usernameUnlockDate = profile?.username_changed_at
+    ? getUnlockDate(profile.username_changed_at)
     : null;
 
   const handlePickAvatar = useCallback(async () => {
@@ -120,7 +143,7 @@ export default function EditProfileScreen() {
       return;
     }
 
-    const usernameChanged = username !== user?.username;
+    const usernameChanged = username !== profile?.username;
     if (usernameChanged) {
       if (!USERNAME_REGEX.test(username)) {
         setError('Username must be 3–20 characters: letters, numbers, underscores only.');
@@ -136,11 +159,11 @@ export default function EditProfileScreen() {
     try {
       const body: Record<string, unknown> = {};
 
-      if (displayName !== user?.display_name) body.display_name = displayName.trim();
+      if (displayName !== profile?.display_name) body.display_name = displayName.trim();
       if (usernameChanged) body.username = username;
-      if (homeGymId !== user?.home_gym_id) body.home_gym_id = homeGymId;
+      if (homeGymId !== profile?.home_gym_id) body.home_gym_id = homeGymId;
       if (avatarBase64) body.avatar_base64 = avatarBase64;
-      if (defaultVisibility !== user?.default_visibility)
+      if (defaultVisibility !== profile?.default_visibility)
         body.default_visibility = defaultVisibility;
 
       if (Object.keys(body).length === 0) {
@@ -165,6 +188,33 @@ export default function EditProfileScreen() {
 
   return (
     <View style={styles.screen}>
+      {/* Top bar — matches CruxBanner style */}
+      <View style={[styles.banner, { paddingTop: insets.top + spacing.sm }]}>
+        <View style={styles.bannerInner}>
+          <View style={styles.bannerLeft}>
+            <Pressable
+              onPress={() => router.back()}
+              style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
+              hitSlop={8}
+            >
+              <MaterialCommunityIcons name="arrow-left" size={24} color={colors.primary} />
+            </Pressable>
+            <Text style={styles.wordmark}>CRUX</Text>
+          </View>
+          <Pressable
+            onPress={handleSave}
+            disabled={loading}
+            style={({ pressed }) => [styles.saveBtn, pressed && styles.iconBtnPressed]}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Text style={styles.saveText}>Save</Text>
+            )}
+          </Pressable>
+        </View>
+      </View>
+
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -172,25 +222,10 @@ export default function EditProfileScreen() {
         <ScrollView
           contentContainerStyle={[
             styles.content,
-            { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.xxl },
+            { paddingTop: insets.top + BANNER_HEIGHT + spacing.xl, paddingBottom: insets.bottom + spacing.xxl },
           ]}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <Pressable onPress={() => router.back()}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </Pressable>
-            <Text style={styles.title}>Edit Profile</Text>
-            <Pressable onPress={handleSave} disabled={loading}>
-              {loading ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Text style={styles.saveText}>Save</Text>
-              )}
-            </Pressable>
-          </View>
-
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           {/* Avatar */}
@@ -341,13 +376,49 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   flex: { flex: 1 },
   content: { paddingHorizontal: spacing.xl, gap: spacing.xl },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  banner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 50,
+    backgroundColor: 'rgba(19,19,19,0.8)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 24 },
+    shadowOpacity: 0.4,
+    shadowRadius: 48,
+    elevation: 16,
   },
-  cancelText: { ...typography.bodyLg, color: colors.onSurfaceVariant },
-  title: { ...typography.headlineMd, color: colors.onSurface },
+  bannerInner: {
+    height: BANNER_HEIGHT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.xl,
+  },
+  bannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  wordmark: {
+    fontFamily: 'Inter_900Black',
+    fontSize: 24,
+    letterSpacing: -1,
+    textTransform: 'uppercase',
+    color: colors.onSurface,
+  },
+  iconBtn: {
+    padding: spacing.sm,
+    borderRadius: 12,
+  },
+  iconBtnPressed: {
+    backgroundColor: 'rgba(168,200,255,0.1)',
+  },
+  saveBtn: {
+    padding: spacing.sm,
+    borderRadius: 12,
+  },
   saveText: { ...typography.bodyLg, color: colors.primary, fontWeight: '700' },
 
   error: { ...typography.bodyMd, color: colors.error, textAlign: 'center' },

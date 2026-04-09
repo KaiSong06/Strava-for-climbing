@@ -1,7 +1,7 @@
 jest.mock('../db/pool', () => require('../test/dbMock').poolModule);
 
 import { mockQuery, resetMock } from '../test/dbMock';
-import { findNearby, getGymById, listAll, getGymProblems } from './gymService';
+import { findNearby, getGymById, listAll, getGymProblems, getRetiredProblemsGrouped } from './gymService';
 import { AppError } from '../middleware/errorHandler';
 
 beforeEach(resetMock);
@@ -183,5 +183,60 @@ describe('getGymProblems', () => {
     const call = mockQuery.mock.calls[0];
     expect(call).toBeDefined();
     expect(call![1]).toEqual(['gym-1', 21, 'cursor-id']);
+  });
+});
+
+describe('getRetiredProblemsGrouped', () => {
+  it('should group retired problems by month', async () => {
+    const rows = [
+      {
+        id: 'p-1', colour: 'red', consensus_grade: 'V3', total_sends: 5,
+        first_upload_at: '2026-01-15', retired_at: '2026-01-29',
+        total_attempts: 8, flash_count: 2, thumbnail_url: null, month: '2026-01',
+      },
+      {
+        id: 'p-2', colour: 'blue', consensus_grade: 'V5', total_sends: 3,
+        first_upload_at: '2026-01-10', retired_at: '2026-01-24',
+        total_attempts: 6, flash_count: 1, thumbnail_url: null, month: '2026-01',
+      },
+      {
+        id: 'p-3', colour: 'green', consensus_grade: 'V2', total_sends: 10,
+        first_upload_at: '2025-12-01', retired_at: '2025-12-15',
+        total_attempts: 15, flash_count: 5, thumbnail_url: null, month: '2025-12',
+      },
+    ];
+    mockQuery.mockResolvedValueOnce({ rows, rowCount: 3 });
+
+    const result = await getRetiredProblemsGrouped('gym-1');
+
+    expect(result).toHaveLength(2);
+    expect(result[0]!.month).toBe('2026-01');
+    expect(result[0]!.problems).toHaveLength(2);
+    expect(result[1]!.month).toBe('2025-12');
+    expect(result[1]!.problems).toHaveLength(1);
+  });
+
+  it('should return empty array when no retired problems', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+    const result = await getRetiredProblemsGrouped('gym-1');
+
+    expect(result).toEqual([]);
+  });
+
+  it('should use "Unknown" for null month values', async () => {
+    const rows = [
+      {
+        id: 'p-1', colour: 'red', consensus_grade: 'V3', total_sends: 5,
+        first_upload_at: '2026-01-01', retired_at: null,
+        total_attempts: 8, flash_count: 2, thumbnail_url: null, month: null,
+      },
+    ];
+    mockQuery.mockResolvedValueOnce({ rows, rowCount: 1 });
+
+    const result = await getRetiredProblemsGrouped('gym-1');
+
+    expect(result).toHaveLength(1);
+    expect(result[0]!.month).toBe('Unknown');
   });
 });

@@ -89,11 +89,16 @@ describe('getAscentById', () => {
           notes: null,
           visibility: 'public',
           logged_at: '2026-01-01T00:00:00Z',
+          user_id: 'u-1',
+          username: 'climber1',
+          display_name: 'Climber One',
+          avatar_url: null,
           problem_id: 'p-1',
           colour: 'red',
           consensus_grade: 'V4',
           gym_id: 'g-1',
           gym_name: 'Beta Bloc',
+          photo_urls: null,
         },
       ],
       rowCount: 1,
@@ -109,12 +114,19 @@ describe('getAscentById', () => {
       notes: null,
       visibility: 'public',
       logged_at: '2026-01-01T00:00:00Z',
+      user: {
+        id: 'u-1',
+        username: 'climber1',
+        display_name: 'Climber One',
+        avatar_url: null,
+      },
       problem: {
         id: 'p-1',
         colour: 'red',
         consensus_grade: 'V4',
         gym: { id: 'g-1', name: 'Beta Bloc' },
       },
+      photo_urls: [],
     });
   });
 
