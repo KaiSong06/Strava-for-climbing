@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { AppError } from '../middleware/errorHandler';
 import { pool } from '../db/pool';
 
 export const searchRouter = Router();
@@ -63,9 +62,6 @@ searchRouter.get('/', async (req, res, next) => {
 
     res.json({ data: results, query: q });
   } catch (err) {
-    if (err instanceof z.ZodError) {
-      return next(new AppError('VALIDATION_ERROR', err.errors[0]?.message ?? 'Invalid query', 400));
-    }
     next(err);
   }
 });

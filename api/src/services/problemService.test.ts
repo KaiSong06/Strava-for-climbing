@@ -7,6 +7,7 @@ import {
   getProblemDetail,
   calculateConsensusGrade,
   incrementTotalSends,
+  getModelUrl,
 } from './problemService';
 import { AppError } from '../middleware/errorHandler';
 
@@ -255,5 +256,44 @@ describe('incrementTotalSends', () => {
     const call = mockQuery.mock.calls[0];
     expect(call![0]).toContain('total_sends = total_sends + 1');
     expect(call![1]).toEqual(['prob-1']);
+  });
+});
+
+describe('getModelUrl', () => {
+  it('returns null without querying the db when problemId is null', async () => {
+    const result = await getModelUrl(null);
+    expect(result).toBeNull();
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  it('returns the model_url when the problem has one', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ model_url: 'https://cdn.test/problem.glb' }],
+      rowCount: 1,
+    });
+
+    const result = await getModelUrl('prob-1');
+
+    expect(result).toBe('https://cdn.test/problem.glb');
+    const call = mockQuery.mock.calls[0];
+    expect(call![0]).toContain('SELECT model_url FROM problems');
+    expect(call![1]).toEqual(['prob-1']);
+  });
+
+  it('returns null when the problem has no model_url yet', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ model_url: null }],
+      rowCount: 1,
+    });
+
+    const result = await getModelUrl('prob-2');
+    expect(result).toBeNull();
+  });
+
+  it('returns null when the problem is missing entirely', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+    const result = await getModelUrl('prob-missing');
+    expect(result).toBeNull();
   });
 });

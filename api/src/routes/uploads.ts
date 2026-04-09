@@ -1,8 +1,8 @@
-import { RequestHandler, Router } from 'express';
-import multer from 'multer';
+import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
 import { uploadLimiter } from '../middleware/rateLimiter';
+import { parsePhotos } from '../middleware/multipart';
 import { AppError } from '../middleware/errorHandler';
 import { pool } from '../db/pool';
 import { uploadBuffer } from '../services/storage';
@@ -13,63 +13,23 @@ import { visionQueue } from '../jobs/queue';
 
 export const uploadsRouter = Router();
 
-// ─── Multer setup ─────────────────────────────────────────────────────────────
-
-const multerUpload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024, files: 5 },
-  fileFilter: (_req, file, cb) => {
-    if (!['image/jpeg', 'image/png'].includes(file.mimetype)) {
-      return cb(new AppError('INVALID_FILE_TYPE', 'Only JPEG and PNG images are accepted', 400));
-    }
-    cb(null, true);
-  },
-});
-
-/** Wraps multer so its errors are converted to AppError before reaching the global handler. */
-const parsePhotos: RequestHandler = (req, res, next) => {
-  multerUpload.array('photos', 5)(req, res, (err) => {
-    if (err instanceof multer.MulterError) {
-      const msg =
-        err.code === 'LIMIT_FILE_COUNT'
-          ? 'Maximum 5 photos allowed'
-          : err.code === 'LIMIT_FILE_SIZE'
-            ? 'Each photo must be under 10 MB'
-            : err.message;
-      return next(new AppError('UPLOAD_ERROR', msg, 400));
-    }
-    if (err) return next(err as Error);
-    next();
-  });
-};
-
 // ─── Validation schemas ────────────────────────────────────────────────────────
+
+const nullish = <T extends z.ZodTypeAny>(schema: T) =>
+  schema.nullish().transform((v) => v ?? null);
 
 const confirmBodySchema = z.object({
   problemId: z.union([z.literal('new'), z.string().uuid()]),
-  user_grade: z
-    .string()
-    .max(10)
-    .nullish()
-    .transform((v) => v ?? null),
-  rating: z
-    .number()
-    .int()
-    .min(1)
-    .max(5)
-    .nullish()
-    .transform((v) => v ?? null),
-  notes: z
-    .string()
-    .max(280)
-    .nullish()
-    .transform((v) => v ?? null),
-  video_url: z
-    .string()
-    .url()
-    .nullish()
-    .transform((v) => v ?? null),
+  user_grade: nullish(z.string().max(10)),
+  rating: nullish(z.number().int().min(1).max(5)),
+  notes: nullish(z.string().max(280)),
+  video_url: nullish(z.string().url()),
   visibility: z.enum(['public', 'friends', 'private']).default('public'),
+});
+
+const uploadBodySchema = z.object({
+  colour: z.string().min(1),
+  gym_id: z.string().uuid(),
 });
 
 // ─── POST /uploads ─────────────────────────────────────────────────────────────
@@ -81,11 +41,7 @@ uploadsRouter.post('/', requireAuth, uploadLimiter, parsePhotos, async (req, res
       throw new AppError('VALIDATION_ERROR', 'At least 1 photo is required', 400);
     }
 
-    const bodySchema = z.object({
-      colour: z.string().min(1),
-      gym_id: z.string().uuid(),
-    });
-    const { colour, gym_id } = bodySchema.parse(req.body);
+    const { colour, gym_id } = uploadBodySchema.parse(req.body);
 
     const photoUrls = await Promise.all(
       files.map((f) => uploadBuffer(f.buffer, f.mimetype, 'problems')),
@@ -117,15 +73,7 @@ uploadsRouter.get('/:uploadId/status', requireAuth, async (req, res, next) => {
       throw new AppError('FORBIDDEN', 'Access denied', 403);
     }
 
-    // Fetch model_url from matched problem if available
-    let modelUrl: string | null = null;
-    if (row.problem_id) {
-      const { rows: problemRows } = await pool.query<{ model_url: string | null }>(
-        `SELECT model_url FROM problems WHERE id = $1`,
-        [row.problem_id],
-      );
-      modelUrl = problemRows[0]?.model_url ?? null;
-    }
+    const modelUrl = await problemService.getModelUrl(row.problem_id);
 
     res.json({
       status: row.processing_status,

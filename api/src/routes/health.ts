@@ -3,7 +3,7 @@ import { pool } from '../db/pool';
 
 export const healthRouter = Router();
 
-healthRouter.get('/', async (_req, res, next) => {
+healthRouter.get('/', async (_req, res) => {
   try {
     await pool.query('SELECT 1');
     res.json({ status: 'ok', db: 'connected' });
@@ -11,5 +11,4 @@ healthRouter.get('/', async (_req, res, next) => {
     // DB not required for health check to return a response
     res.json({ status: 'ok', db: 'disconnected' });
   }
-  next();
 });

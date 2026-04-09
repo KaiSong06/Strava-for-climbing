@@ -144,6 +144,22 @@ export async function incrementTotalSends(problemId: string): Promise<void> {
   await pool.query(`UPDATE problems SET total_sends = total_sends + 1 WHERE id = $1`, [problemId]);
 }
 
+/**
+ * Fetch the `model_url` column for a given problem.
+ *
+ * Returns `null` when `problemId` is nullish or when the row has no model yet.
+ * Callers (e.g. `GET /uploads/:id/status`) use this to surface the holographic
+ * model URL once the vision pipeline has produced one.
+ */
+export async function getModelUrl(problemId: string | null): Promise<string | null> {
+  if (!problemId) return null;
+  const { rows } = await pool.query<{ model_url: string | null }>(
+    `SELECT model_url FROM problems WHERE id = $1`,
+    [problemId],
+  );
+  return rows[0]?.model_url ?? null;
+}
+
 /** Recalculate consensus_grade from the median of all voted user_grades on this problem. */
 export async function calculateConsensusGrade(problemId: string): Promise<void> {
   const { rows } = await pool.query<{ user_grade: string }>(

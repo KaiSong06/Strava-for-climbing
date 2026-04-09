@@ -2,6 +2,7 @@ import 'dotenv/config';
 import './lib/sentry';
 import express, { Express } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import { router } from './routes';
 import { errorHandler } from './middleware/errorHandler';
 import { defaultLimiter } from './middleware/rateLimiter';
@@ -20,6 +21,10 @@ export interface CreateAppOptions {
  */
 export function createApp(options: CreateAppOptions = {}): Express {
   const app = express();
+
+  // Security headers (X-Content-Type-Options, X-Frame-Options, HSTS, etc.)
+  // applied before CORS so every response — including preflight — carries them.
+  app.use(helmet());
 
   const corsOrigin = process.env['CORS_ORIGIN'];
   app.use(

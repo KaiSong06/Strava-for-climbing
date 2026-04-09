@@ -52,15 +52,18 @@ disputesRouter.post('/:disputeId/vote', requireAuth, async (req, res, next) => {
       throw new AppError('FORBIDDEN', 'You must have an ascent on this problem to vote', 403);
     }
 
-    // Increment the relevant vote counter
-    const voteCol = vote === 'confirm' ? 'votes_confirm' : 'votes_split';
+    // Increment the relevant vote counter using CASE WHEN to keep the column
+    // name out of string interpolation — $2 is the enum-checked vote value.
     const { rows: updated } = await pool.query<{
       votes_confirm: number;
       votes_split: number;
     }>(
-      `UPDATE match_disputes SET ${voteCol} = ${voteCol} + 1 WHERE id = $1
+      `UPDATE match_disputes
+       SET votes_confirm = CASE WHEN $2 = 'confirm' THEN votes_confirm + 1 ELSE votes_confirm END,
+           votes_split   = CASE WHEN $2 = 'split'   THEN votes_split   + 1 ELSE votes_split   END
+       WHERE id = $1
        RETURNING votes_confirm, votes_split`,
-      [disputeId],
+      [disputeId, vote],
     );
     const { votes_confirm, votes_split } = updated[0]!;
     const total = votes_confirm + votes_split;
