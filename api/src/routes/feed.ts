@@ -6,7 +6,7 @@ import * as feedService from '../services/feedService';
 export const feedRouter = Router();
 
 const paginationSchema = z.object({
-  cursor: z.string().uuid().optional(),
+  cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 

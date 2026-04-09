@@ -2,6 +2,7 @@ jest.mock('../db/pool', () => require('../test/dbMock').poolModule);
 
 import { mockQuery, resetMock } from '../test/dbMock';
 import { getPersonalFeed, getGymFeed, getDiscoverFeed, getUserAscents } from './feedService';
+import { encodeCursor, decodeCursor } from '../lib/cursorPagination';
 
 beforeEach(resetMock);
 
@@ -71,17 +72,24 @@ describe('getPersonalFeed', () => {
 
     expect(result.data).toHaveLength(20);
     expect(result.has_more).toBe(true);
-    expect(result.cursor).toBe('a-19');
+    // Cursor is an opaque base64url token; decode it to verify.
+    const decoded = decodeCursor(result.cursor);
+    expect(decoded).toEqual({ id: 'a-19', sortKey: '2026-01-01T00:00:00Z' });
   });
 
-  it('should pass cursor as third param when provided', async () => {
+  it('should pass decoded cursor components as keyset params when provided', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
 
-    await getPersonalFeed('viewer-1', 'cursor-id');
+    const cursor = encodeCursor({ id: 'cursor-id', sortKey: '2026-02-10T00:00:00.000Z' });
+    await getPersonalFeed('viewer-1', cursor);
 
     const call = mockQuery.mock.calls[0];
     expect(call).toBeDefined();
-    expect(call![1]).toEqual(['viewer-1', 21, 'cursor-id']);
+    // Params: [viewerId, limit+1, sortKey, id]
+    expect(call![1]).toEqual(['viewer-1', 21, '2026-02-10T00:00:00.000Z', 'cursor-id']);
+    // And the generated SQL should reference $3/$4 for the keyset clause.
+    expect(call![0]).toContain('a.logged_at < $3');
+    expect(call![0]).toContain('a.id < $4');
   });
 
   it('should use default limit of 20 (fetch 21)', async () => {

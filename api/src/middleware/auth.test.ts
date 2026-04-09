@@ -152,6 +152,42 @@ describe('auth middleware — requireAuth', () => {
     expect(err).toBeInstanceOf(AppError);
     expect((err as InstanceType<typeof AppError>).statusCode).toBe(401);
   });
+
+  it('classifies non-Error JWT failures as "unknown" in the warn log', async () => {
+    // Covers the `err instanceof Error ? … : 'unknown'` branch inside the
+    // requireAuth catch block. We reimport auth.ts against a custom jose
+    // mock whose jwtVerify throws a plain string, exercising the non-Error
+    // arm of the ternary on line 57.
+    jest.resetModules();
+    jest.doMock('jose', () => {
+      const actual = jest.requireActual('jose') as typeof import('jose');
+      return {
+        ...actual,
+        createRemoteJWKSet: () => async () => ({}) as unknown,
+        jwtVerify: () => {
+          throw 'string-not-error';
+        },
+      };
+    });
+    process.env['SUPABASE_URL'] = 'https://test.supabase.co';
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { requireAuth: freshRequireAuth } = require('./auth') as typeof import('./auth');
+
+    const req = makeReq({ authorization: 'Bearer whatever.token.value' });
+    const res = makeRes();
+    const next = makeNext();
+
+    await freshRequireAuth(req as unknown as Request, res, next as unknown as NextFunction);
+
+    jest.resetModules();
+    const err = next.mock.calls[0]?.[0];
+    // Cannot use `instanceof AppError` here because resetModules() created a
+    // fresh AppError class identity in the re-required module graph. Assert
+    // on the duck-typed shape instead.
+    expect(err).toBeDefined();
+    expect((err as { statusCode: number; code: string }).statusCode).toBe(401);
+    expect((err as { statusCode: number; code: string }).code).toBe('UNAUTHORIZED');
+  });
 });
 
 describe('auth middleware — optionalAuth', () => {

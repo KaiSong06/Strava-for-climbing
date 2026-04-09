@@ -1,5 +1,6 @@
 import { pool } from '../db/pool';
-import type { FeedItem } from '@shared/types';
+import type { FeedItem, PaginatedResponse } from '@shared/types';
+import { buildKeysetClause, buildPaginationEnvelope } from '../lib/cursorPagination';
 
 type FeedRow = {
   id: string;
@@ -48,19 +49,6 @@ const FEED_JOINS = `
   JOIN gyms     g ON g.id = p.gym_id
 `;
 
-// Keyset pagination: cursor is an ascentId; we paginate by (logged_at DESC, id DESC)
-function cursorClause(paramIdx: number): string {
-  return `
-    AND (
-      a.logged_at < (SELECT a2.logged_at FROM ascents a2 WHERE a2.id = $${paramIdx})
-      OR (
-        a.logged_at = (SELECT a2.logged_at FROM ascents a2 WHERE a2.id = $${paramIdx})
-        AND a.id < $${paramIdx}
-      )
-    )
-  `;
-}
-
 function toFeedItem(row: FeedRow): FeedItem {
   return {
     id: row.id,
@@ -85,23 +73,29 @@ function toFeedItem(row: FeedRow): FeedItem {
   };
 }
 
-function paginate(
-  rows: FeedRow[],
-  limit: number,
-): { data: FeedItem[]; cursor: string | null; has_more: boolean } {
-  const hasMore = rows.length > limit;
-  const data = rows.slice(0, limit).map(toFeedItem);
-  return { data, cursor: hasMore ? (data[data.length - 1]?.id ?? null) : null, has_more: hasMore };
+/** Build the ascents keyset clause — every feed variant paginates identically. */
+function ascentsKeyset(cursor: string | undefined, startIndex: number) {
+  return buildKeysetClause({ cursor, sortColumn: 'a.logged_at', idColumn: 'a.id', startIndex });
+}
+
+/** Wrap a row-set fetched with `LIMIT limit + 1` into a feed envelope. */
+function buildFeedEnvelope(rows: FeedRow[], limit: number): PaginatedResponse<FeedItem> {
+  const env = buildPaginationEnvelope({
+    rows,
+    limit,
+    getCursorKey: (row) => ({ id: row.id, sortKey: row.logged_at }),
+  });
+  return { data: env.data.map(toFeedItem), cursor: env.cursor, has_more: env.has_more };
 }
 
 export async function getPersonalFeed(
   viewerId: string,
   cursor?: string,
   limit = 20,
-): Promise<{ data: FeedItem[]; cursor: string | null; has_more: boolean }> {
+): Promise<PaginatedResponse<FeedItem>> {
   const params: unknown[] = [viewerId, limit + 1];
-  const extra = cursor ? (params.push(cursor), cursorClause(3)) : '';
-
+  const keyset = ascentsKeyset(cursor, params.length + 1);
+  params.push(...keyset.params);
   const { rows } = await pool.query<FeedRow>(
     `SELECT ${FEED_COLS}
      FROM ascents a
@@ -119,66 +113,64 @@ export async function getPersonalFeed(
          )
        )
      )
-     ${extra}
+     ${keyset.sql}
      ORDER BY a.logged_at DESC, a.id DESC
      LIMIT $2`,
     params,
   );
 
-  return paginate(rows, limit);
+  return buildFeedEnvelope(rows, limit);
 }
 
 export async function getGymFeed(
   gymId: string,
   cursor?: string,
   limit = 20,
-): Promise<{ data: FeedItem[]; cursor: string | null; has_more: boolean }> {
+): Promise<PaginatedResponse<FeedItem>> {
   const params: unknown[] = [gymId, limit + 1];
-  const extra = cursor ? (params.push(cursor), cursorClause(3)) : '';
-
+  const keyset = ascentsKeyset(cursor, params.length + 1);
+  params.push(...keyset.params);
   const { rows } = await pool.query<FeedRow>(
     `SELECT ${FEED_COLS}
      FROM ascents a
      ${FEED_JOINS}
      WHERE p.gym_id = $1
      AND a.visibility = 'public'
-     ${extra}
+     ${keyset.sql}
      ORDER BY a.logged_at DESC, a.id DESC
      LIMIT $2`,
     params,
   );
 
-  return paginate(rows, limit);
+  return buildFeedEnvelope(rows, limit);
 }
 
 export async function getDiscoverFeed(
   viewerId: string | undefined,
   cursor?: string,
   limit = 20,
-): Promise<{ data: FeedItem[]; cursor: string | null; has_more: boolean }> {
+): Promise<PaginatedResponse<FeedItem>> {
   const params: unknown[] = [limit + 1];
-  let whereExtra = '';
-
+  let viewerClause = '';
   if (viewerId) {
     params.push(viewerId);
-    whereExtra = `AND a.user_id != $${params.length}`;
+    viewerClause = `AND a.user_id != $${params.length}`;
   }
-
-  const cursorExtra = cursor ? (params.push(cursor), cursorClause(params.length)) : '';
-
+  const keyset = ascentsKeyset(cursor, params.length + 1);
+  params.push(...keyset.params);
   const { rows } = await pool.query<FeedRow>(
     `SELECT ${FEED_COLS}
      FROM ascents a
      ${FEED_JOINS}
      WHERE a.visibility = 'public'
-     ${whereExtra}
-     ${cursorExtra}
+     ${viewerClause}
+     ${keyset.sql}
      ORDER BY a.logged_at DESC, a.id DESC
      LIMIT $1`,
     params,
   );
 
-  return paginate(rows, limit);
+  return buildFeedEnvelope(rows, limit);
 }
 
 export async function getUserAscents(
@@ -186,7 +178,7 @@ export async function getUserAscents(
   viewerId: string | undefined,
   cursor?: string,
   limit = 20,
-): Promise<{ data: FeedItem[]; cursor: string | null; has_more: boolean }> {
+): Promise<PaginatedResponse<FeedItem>> {
   // Determine visibility: always public; friends-only if mutual follow; never private
   let visibilityClause = `a.visibility = 'public'`;
   if (viewerId && viewerId !== targetUserId) {
@@ -204,19 +196,18 @@ export async function getUserAscents(
   }
 
   const params: unknown[] = [targetUserId, limit + 1];
-  const extra = cursor ? (params.push(cursor), cursorClause(3)) : '';
-
+  const keyset = ascentsKeyset(cursor, params.length + 1);
+  params.push(...keyset.params);
   const { rows } = await pool.query<FeedRow>(
     `SELECT ${FEED_COLS}
      FROM ascents a
      ${FEED_JOINS}
      WHERE a.user_id = $1
      AND ${visibilityClause}
-     ${extra}
+     ${keyset.sql}
      ORDER BY a.logged_at DESC, a.id DESC
      LIMIT $2`,
     params,
   );
-
-  return paginate(rows, limit);
+  return buildFeedEnvelope(rows, limit);
 }

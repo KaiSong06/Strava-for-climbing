@@ -5,9 +5,11 @@
 --   'friends' → shown only if the ascent's author also follows the viewer (mutual follow)
 --   'private' → never shown in anyone else's feed
 --
--- Pagination: keyset on (logged_at DESC, id DESC) using an ascentId cursor.
--- The cursor subquery looks up logged_at for the cursor row so the WHERE clause
--- can correctly skip past it without relying on UUID ordering.
+-- Pagination: keyset on (logged_at DESC, id DESC). The cursor is an opaque
+-- base64url token that encodes { id, sortKey } — the service decodes it into
+-- two bound parameters ($cursor_sort, $cursor_id) before running the query,
+-- so there's no subquery round-trip to resolve the cursor row's logged_at.
+-- See api/src/lib/cursorPagination.ts for the encode/decode helpers.
 
 SELECT
   a.id,
@@ -46,11 +48,8 @@ AND (
 )
 -- cursor condition (omit for the first page)
 AND (
-  a.logged_at < (SELECT a2.logged_at FROM ascents a2 WHERE a2.id = :cursor_id)
-  OR (
-    a.logged_at = (SELECT a2.logged_at FROM ascents a2 WHERE a2.id = :cursor_id)
-    AND a.id < :cursor_id
-  )
+  a.logged_at < :cursor_sort
+  OR (a.logged_at = :cursor_sort AND a.id < :cursor_id)
 )
 ORDER BY a.logged_at DESC, a.id DESC
 LIMIT :limit;
@@ -83,11 +82,8 @@ WHERE p.gym_id = :gym_id
   AND a.visibility = 'public'
 -- cursor condition (omit for the first page)
 AND (
-  a.logged_at < (SELECT a2.logged_at FROM ascents a2 WHERE a2.id = :cursor_id)
-  OR (
-    a.logged_at = (SELECT a2.logged_at FROM ascents a2 WHERE a2.id = :cursor_id)
-    AND a.id < :cursor_id
-  )
+  a.logged_at < :cursor_sort
+  OR (a.logged_at = :cursor_sort AND a.id < :cursor_id)
 )
 ORDER BY a.logged_at DESC, a.id DESC
 LIMIT :limit;

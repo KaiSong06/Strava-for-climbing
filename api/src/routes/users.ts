@@ -37,7 +37,7 @@ usersRouter.patch('/me', requireAuth, async (req, res, next) => {
 });
 
 const ascentPaginationSchema = z.object({
-  cursor: z.string().uuid().optional(),
+  cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 

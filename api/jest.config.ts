@@ -31,6 +31,7 @@ const config: Config = {
   // routes (gyms, problems, search, pushTokens, users, auth, internal, health)
   // are out of scope for this sprint and will be covered by later sprints.
   collectCoverageFrom: [
+    'src/lib/cursorPagination.ts',
     'src/middleware/auth.ts',
     'src/middleware/errorHandler.ts',
     'src/middleware/rateLimiter.ts',
