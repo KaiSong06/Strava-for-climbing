@@ -15,7 +15,10 @@ import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 import { typography } from '@/src/theme/typography';
 import { api } from '@/src/lib/api';
+import { classifyError } from '@/src/lib/queryClient';
 import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
+import { ErrorState } from '@/src/components/ui/ErrorState';
+import { ListSkeleton } from '@/src/components/ui/ListSkeleton';
 import { CruxBanner, BANNER_HEIGHT } from '@/src/components/CruxBanner';
 import { useGeocode } from '@/src/hooks/useGeocode';
 import { useNearbyGyms } from '@/src/hooks/useNearbyGyms';
@@ -36,6 +39,7 @@ export default function GymScreen() {
     data: allGyms,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: ['gyms'],
     queryFn: () => api.get<{ data: Gym[] }>('/gyms').then((res) => res.data),
@@ -108,9 +112,11 @@ export default function GymScreen() {
 
         {/* ── Gym cards feed ───────────────────────────────────────────── */}
         <View style={styles.feed}>
-          {isLoadingGyms && <ActivityIndicator color={colors.primary} style={styles.loader} />}
-          {error && !searchCoords && <Text style={styles.errorText}>Failed to load gyms</Text>}
-          {displayGyms?.length === 0 && !isLoadingGyms && (
+          {isLoadingGyms && <ListSkeleton count={3} />}
+          {error && !searchCoords && !isLoadingGyms && (
+            <ErrorState message={classifyError(error)} onRetry={() => void refetch()} />
+          )}
+          {displayGyms?.length === 0 && !isLoadingGyms && !error && (
             <Text style={styles.emptyText}>No gyms found nearby. Try a different address.</Text>
           )}
           {displayGyms?.map((gym) => (
@@ -182,15 +188,6 @@ const styles = StyleSheet.create({
   feed: {
     paddingHorizontal: spacing.xl,
     gap: spacing.xxl,
-  },
-  loader: {
-    marginTop: spacing.xxl,
-  },
-  errorText: {
-    ...typography.bodyMd,
-    color: colors.error,
-    textAlign: 'center',
-    marginTop: spacing.xxl,
   },
   emptyText: {
     ...typography.bodyMd,

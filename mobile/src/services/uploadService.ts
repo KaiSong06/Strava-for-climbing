@@ -1,5 +1,5 @@
 import { useAuthStore } from '../stores/authStore';
-import { api } from '../lib/api';
+import { api, ApiError } from '../lib/api';
 import type { ProcessingStatus } from '@shared/types';
 
 const BASE_URL = process.env['EXPO_PUBLIC_API_URL'] ?? 'http://localhost:3001';
@@ -8,6 +8,7 @@ export interface UploadStatusResponse {
   status: ProcessingStatus;
   similarityScore: number | null;
   matchedProblemId: string | null;
+  modelUrl: string | null;
   candidateProblems: unknown[];
 }
 
@@ -18,6 +19,8 @@ export interface ConfirmBody {
   notes: string | null;
   visibility: 'public' | 'friends' | 'private';
 }
+
+const UPLOAD_TIMEOUT_MS = 60_000;
 
 /**
  * Upload photos as multipart/form-data via fetch.
@@ -48,11 +51,28 @@ export async function uploadPhotos(
 
   onProgress(0);
 
-  const response = await fetch(`${BASE_URL}/uploads`, {
-    method: 'POST',
-    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-    body: formData,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}/uploads`, {
+      method: 'POST',
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      body: formData,
+      signal: controller.signal,
+    });
+  } catch (err: unknown) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new ApiError('TIMEOUT', 'Upload timed out after 60 seconds.', 408);
+    }
+    if (err instanceof TypeError && /network request failed/i.test(err.message)) {
+      throw new ApiError('NETWORK', 'No internet connection.', 0);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   onProgress(1);
 
@@ -61,12 +81,16 @@ export async function uploadPhotos(
     return data.uploadId;
   }
 
+  let code = 'UPLOAD_FAILED';
   let message = `Upload failed (${response.status})`;
   try {
-    const err = (await response.json()) as { error?: { message: string } };
-    if (err.error) message = err.error.message;
+    const err = (await response.json()) as { error?: { code?: string; message: string } };
+    if (err.error) {
+      if (err.error.code) code = err.error.code;
+      message = err.error.message;
+    }
   } catch { /* ignore */ }
-  throw new Error(message);
+  throw new ApiError(code, message, response.status);
 }
 
 /**
@@ -82,7 +106,7 @@ export async function pollStatus(uploadId: string): Promise<UploadStatusResponse
     }
     await new Promise<void>((resolve) => setTimeout(resolve, 2_000));
   }
-  throw new Error('Processing timed out. Please try again later.');
+  throw new ApiError('TIMEOUT', 'Processing timed out. Please try again later.', 408);
 }
 
 /** Calls POST /uploads/:id/confirm with the problem selection + ascent data. */

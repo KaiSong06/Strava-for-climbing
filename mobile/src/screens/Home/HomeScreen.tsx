@@ -1,13 +1,16 @@
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/src/lib/api';
+import { classifyError } from '@/src/lib/queryClient';
 import { useAuthStore } from '@/src/stores/authStore';
 import type { FeedItem, PaginatedResponse } from '@shared/types';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 import { typography } from '@/src/theme/typography';
 import { CruxBanner, BANNER_HEIGHT } from '@/src/components/CruxBanner';
+import { ErrorState } from '@/src/components/ui/ErrorState';
+import { ListSkeleton } from '@/src/components/ui/ListSkeleton';
 import { AscentPostCard } from './components/AscentPostCard';
 import type { AscentPostData } from './components/AscentPostCard';
 
@@ -34,7 +37,7 @@ export default function HomeScreen() {
   const topPadding = insets.top + BANNER_HEIGHT + spacing.lg;
   const accessToken = useAuthStore((s) => s.accessToken);
 
-  const { data, isLoading, error } = useQuery<PaginatedResponse<FeedItem>>({
+  const { data, isLoading, error, refetch } = useQuery<PaginatedResponse<FeedItem>>({
     queryKey: ['feed'],
     queryFn: () => api.get<PaginatedResponse<FeedItem>>('/feed'),
     enabled: !!accessToken,
@@ -53,9 +56,9 @@ export default function HomeScreen() {
         ItemSeparatorComponent={Separator}
         ListEmptyComponent={
           isLoading ? (
-            <ActivityIndicator color={colors.primary} style={styles.loader} />
+            <ListSkeleton />
           ) : error ? (
-            <Text style={styles.emptyText}>Could not load feed.</Text>
+            <ErrorState message={classifyError(error)} onRetry={() => void refetch()} />
           ) : (
             <Text style={styles.emptyText}>Follow climbers to see their ascents here.</Text>
           )
@@ -84,9 +87,6 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: spacing.xl + spacing.lg,
-  },
-  loader: {
-    marginTop: spacing.xxxl,
   },
   emptyText: {
     ...typography.bodyMd,

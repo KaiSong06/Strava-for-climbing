@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Inter_400Regular, Inter_700Bold, Inter_900Black } from '@expo-google-fonts/inter';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -12,6 +12,8 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { useAuthStore } from '@/src/stores/authStore';
 import { registerForPushNotifications, setupNotificationHandler } from '@/src/services/pushService';
 import { useNotificationDeepLink } from '@/src/hooks/useNotificationDeepLink';
+import { queryClient } from '@/src/lib/queryClient';
+import { ToastProvider } from '@/src/components/ui/ToastProvider';
 
 Sentry.init({
   dsn: process.env['EXPO_PUBLIC_SENTRY_DSN'],
@@ -20,8 +22,6 @@ Sentry.init({
 });
 
 setupNotificationHandler();
-
-const queryClient = new QueryClient();
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -118,24 +118,26 @@ function RootLayoutNav() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <AuthGate />
-        <PushNotificationManager />
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="follow-list" options={{ title: 'Follow List' }} />
-          <Stack.Screen name="profile/[username]" options={{ title: '' }} />
-          <Stack.Screen name="problem/[id]" options={{ title: 'Problem' }} />
-          <Stack.Screen name="ascent/[id]" options={{ title: 'Ascent' }} />
-          <Stack.Screen name="gym/[gymId]" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="log-ascent/[problemId]"
-            options={{ title: 'Log Ascent', presentation: 'modal' }}
-          />
-          <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
-          <Stack.Screen name="feed/gym" options={{ title: 'Gym Activity' }} />
-          <Stack.Screen name="ascent-history/[username]" options={{ title: 'Ascent History' }} />
-        </Stack>
+        <ToastProvider>
+          <AuthGate />
+          <PushNotificationManager />
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="follow-list" options={{ title: 'Follow List' }} />
+            <Stack.Screen name="profile/[username]" options={{ title: '' }} />
+            <Stack.Screen name="problem/[id]" options={{ title: 'Problem' }} />
+            <Stack.Screen name="ascent/[id]" options={{ title: 'Ascent' }} />
+            <Stack.Screen name="gym/[gymId]" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="log-ascent/[problemId]"
+              options={{ title: 'Log Ascent', presentation: 'modal' }}
+            />
+            <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
+            <Stack.Screen name="feed/gym" options={{ title: 'Gym Activity' }} />
+            <Stack.Screen name="ascent-history/[username]" options={{ title: 'Ascent History' }} />
+          </Stack>
+        </ToastProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

@@ -1,8 +1,11 @@
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
+import { classifyError } from '@/src/lib/queryClient';
+import { ErrorState } from '@/src/components/ui/ErrorState';
+import { ListSkeleton } from '@/src/components/ui/ListSkeleton';
 import { CruxBanner, BANNER_HEIGHT } from '@/src/components/CruxBanner';
 import { SearchHeader, SEARCH_HEADER_CONTENT_HEIGHT } from './components/SearchHeader';
 import { FriendsRow } from './components/FriendsRow';
@@ -15,9 +18,20 @@ export default function SearchScreen() {
   const router = useRouter();
   const topPadding = insets.top + BANNER_HEIGHT + SEARCH_HEADER_CONTENT_HEIGHT + spacing.xl;
 
-  const { data: friends = [], isLoading: friendsLoading } = useFriends();
-  const { data: tiles = [], isLoading: tilesLoading } = useDiscoverFeed();
+  const {
+    data: friends = [],
+    isLoading: friendsLoading,
+    error: friendsError,
+    refetch: refetchFriends,
+  } = useFriends();
+  const {
+    data: tiles = [],
+    isLoading: tilesLoading,
+    error: tilesError,
+    refetch: refetchTiles,
+  } = useDiscoverFeed();
   const isLoading = friendsLoading && tilesLoading;
+  const error = friendsError ?? tilesError;
 
   function handleFriendPress(friend: FriendEntry) {
     const username = friend.username.replace(/^@/, '');
@@ -32,6 +46,11 @@ export default function SearchScreen() {
     }
   }
 
+  function handleRetry() {
+    if (friendsError) void refetchFriends();
+    if (tilesError) void refetchTiles();
+  }
+
   return (
     <View style={styles.screen}>
       <ScrollView
@@ -40,7 +59,9 @@ export default function SearchScreen() {
         showsVerticalScrollIndicator={false}
       >
         {isLoading ? (
-          <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
+          <ListSkeleton count={3} />
+        ) : error ? (
+          <ErrorState message={classifyError(error)} onRetry={handleRetry} />
         ) : (
           <>
             <FriendsRow friends={friends} onFriendPress={handleFriendPress} />
@@ -65,8 +86,5 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,
-  },
-  loader: {
-    marginTop: spacing.xxxl,
   },
 });

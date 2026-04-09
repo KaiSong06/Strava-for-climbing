@@ -1,14 +1,18 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { api } from '@/src/lib/api';
+import { classifyError } from '@/src/lib/queryClient';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useFollowStore } from '@/src/stores/followStore';
 import type { AuthUser, FeedItem, PaginatedResponse } from '@shared/types';
 import { colors } from '@/src/theme/colors';
+import { spacing } from '@/src/theme/spacing';
 import { CruxBanner, BANNER_HEIGHT } from '@/src/components/CruxBanner';
+import { ErrorState } from '@/src/components/ui/ErrorState';
+import { ListSkeleton } from '@/src/components/ui/ListSkeleton';
 import { ProfileHeader } from './components/ProfileHeader';
 import { ActionButtons } from './components/ActionButtons';
 import { RecentActivity } from './components/RecentActivity';
@@ -47,13 +51,19 @@ export default function AccountScreen() {
     data: profile,
     isLoading,
     error,
+    refetch: refetchProfile,
   } = useQuery<AuthUser>({
     queryKey: ['users', 'me'],
     queryFn: () => api.get<AuthUser>('/users/me'),
     enabled: !!accessToken,
   });
 
-  const { data: ascentsPage } = useQuery<PaginatedResponse<FeedItem>>({
+  const {
+    data: ascentsPage,
+    error: ascentsError,
+    isLoading: ascentsLoading,
+    refetch: refetchAscents,
+  } = useQuery<PaginatedResponse<FeedItem>>({
     queryKey: ['users', profile?.username, 'ascents'],
     queryFn: () =>
       api.get<PaginatedResponse<FeedItem>>(`/users/${profile!.username}/ascents?limit=5`),
@@ -115,8 +125,10 @@ export default function AccountScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.centered, { paddingTop: insets.top + BANNER_HEIGHT }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={styles.screen}>
+        <View style={[styles.skeletonWrapper, { paddingTop: insets.top + BANNER_HEIGHT + spacing.xl }]}>
+          <ListSkeleton count={2} />
+        </View>
         <CruxBanner />
       </View>
     );
@@ -124,17 +136,25 @@ export default function AccountScreen() {
 
   if (error != null || profile == null) {
     return (
-      <View style={[styles.centered, { paddingTop: insets.top + BANNER_HEIGHT }]}>
-        <Text style={styles.errorText}>Failed to load profile.</Text>
+      <View style={styles.screen}>
+        <View style={[styles.errorWrapper, { paddingTop: insets.top + BANNER_HEIGHT }]}>
+          <ErrorState
+            message={classifyError(error)}
+            onRetry={() => void refetchProfile()}
+          />
+        </View>
         <CruxBanner />
       </View>
     );
   }
 
+  const showAscentsError = ascentsError != null;
+  const showAscentsSkeleton = ascentsLoading && !ascentsPage;
+
   return (
     <View style={styles.screen}>
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + BANNER_HEIGHT + 24 }]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + BANNER_HEIGHT + spacing.xl }]}
         showsVerticalScrollIndicator={false}
       >
         <ProfileHeader
@@ -145,11 +165,20 @@ export default function AccountScreen() {
 
         <ActionButtons onEditProfile={handleEditProfile} onSignOut={handleSignOut} />
 
-        <RecentActivity
-          activities={(ascentsPage?.data ?? []).map(feedItemToActivity)}
-          onViewAll={handleViewAll}
-          onActivityPress={handleActivityPress}
-        />
+        {showAscentsSkeleton ? (
+          <ListSkeleton count={2} />
+        ) : showAscentsError ? (
+          <ErrorState
+            message={classifyError(ascentsError)}
+            onRetry={() => void refetchAscents()}
+          />
+        ) : (
+          <RecentActivity
+            activities={(ascentsPage?.data ?? []).map(feedItemToActivity)}
+            onViewAll={handleViewAll}
+            onActivityPress={handleActivityPress}
+          />
+        )}
       </ScrollView>
       <CruxBanner />
     </View>
@@ -162,18 +191,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    paddingHorizontal: 24,
-    paddingBottom: 32,
-    gap: 32,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxl,
+    gap: spacing.xxl,
   },
-  centered: {
+  skeletonWrapper: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
+    paddingHorizontal: spacing.xl,
   },
-  errorText: {
-    color: colors.error,
-    fontSize: 16,
+  errorWrapper: {
+    flex: 1,
   },
 });
