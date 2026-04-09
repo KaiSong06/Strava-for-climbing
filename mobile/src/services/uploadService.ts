@@ -31,7 +31,7 @@ const UPLOAD_TIMEOUT_MS = 60_000;
  * real-time progress is needed later.
  */
 export async function uploadPhotos(
-  photos: Array<{ uri: string }>,
+  photos: { uri: string }[],
   colour: string,
   gymId: string,
   onProgress: (progress: number) => void,

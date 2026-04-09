@@ -1,5 +1,6 @@
 import { Image, Pressable, StyleSheet, View, Text } from 'react-native';
 import type { FeedItem, AscentType } from '@shared/types';
+import { colors } from '@/src/theme/colors';
 
 const TYPE_LABEL: Record<AscentType, string> = {
   flash: 'flashed',
@@ -70,7 +71,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e5e7eb',
+    borderColor: colors.outlineVariant,
     gap: 12,
   },
   avatarCol: { paddingTop: 2 },
@@ -79,14 +80,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarInitial: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  avatarInitial: { color: colors.onPrimary, fontSize: 16, fontWeight: '700' },
   content: { flex: 1, gap: 4 },
-  action: { fontSize: 14, color: '#111827', lineHeight: 20 },
+  action: { fontSize: 14, color: colors.onSurface, lineHeight: 20 },
   name: { fontWeight: '700' },
-  gym: { fontWeight: '600', color: '#2563eb' },
-  meta: { fontSize: 12, color: '#6b7280' },
+  gym: { fontWeight: '600', color: colors.primary },
+  meta: { fontSize: 12, color: colors.onSurfaceVariant },
 });

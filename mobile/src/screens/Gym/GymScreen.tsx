@@ -15,6 +15,7 @@ import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 import { typography } from '@/src/theme/typography';
 import { api } from '@/src/lib/api';
+import { navigate } from '@/src/lib/navigation';
 import { classifyError } from '@/src/lib/queryClient';
 import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { ErrorState } from '@/src/components/ui/ErrorState';
@@ -62,7 +63,7 @@ export default function GymScreen() {
   const isLoadingGyms = searchCoords ? isNearbyLoading : isLoading;
 
   function handleGymPress(gym: Gym) {
-    router.push({ pathname: '/gym/[gymId]', params: { gymId: gym.id } } as Parameters<typeof router.push>[0]);
+    navigate(router, { pathname: '/gym/[gymId]', params: { gymId: gym.id } });
   }
 
   return (

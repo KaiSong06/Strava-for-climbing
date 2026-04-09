@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { api } from '@/src/lib/api';
+import { navigate } from '@/src/lib/navigation';
 import { classifyError } from '@/src/lib/queryClient';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useFollowStore } from '@/src/stores/followStore';
@@ -77,7 +78,7 @@ export default function AccountScreen() {
   }, [profile?.username, loadFollowing]);
 
   function handleEditProfile() {
-    router.push('/edit-profile' as Parameters<typeof router.push>[0]);
+    navigate(router, { pathname: '/edit-profile' });
   }
 
   function handleSignOut() {
@@ -97,30 +98,30 @@ export default function AccountScreen() {
 
   function handleFollowers() {
     if (!profile) return;
-    router.push({
+    navigate(router, {
       pathname: '/follow-list',
       params: { mode: 'followers', username: profile.username },
-    } as Parameters<typeof router.push>[0]);
+    });
   }
 
   function handleFollowing() {
     if (!profile) return;
-    router.push({
+    navigate(router, {
       pathname: '/follow-list',
       params: { mode: 'following', username: profile.username },
-    } as Parameters<typeof router.push>[0]);
+    });
   }
 
   function handleViewAll() {
     if (!profile) return;
-    router.push({
+    navigate(router, {
       pathname: '/ascent-history/[username]',
       params: { username: profile.username },
-    } as Parameters<typeof router.push>[0]);
+    });
   }
 
   function handleActivityPress(activity: AscentActivity) {
-    router.push({ pathname: '/problem/[id]', params: { id: activity.problemId } } as Parameters<typeof router.push>[0]);
+    navigate(router, { pathname: '/problem/[id]', params: { id: activity.problemId } });
   }
 
   if (isLoading) {

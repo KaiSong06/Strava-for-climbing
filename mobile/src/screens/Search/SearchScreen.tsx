@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
+import { navigate } from '@/src/lib/navigation';
 import { classifyError } from '@/src/lib/queryClient';
 import { ErrorState } from '@/src/components/ui/ErrorState';
 import { ListSkeleton } from '@/src/components/ui/ListSkeleton';
@@ -35,14 +36,14 @@ export default function SearchScreen() {
 
   function handleFriendPress(friend: FriendEntry) {
     const username = friend.username.replace(/^@/, '');
-    router.push({ pathname: '/profile/[username]', params: { username } } as Parameters<typeof router.push>[0]);
+    navigate(router, { pathname: '/profile/[username]', params: { username } });
   }
 
   function handleTilePress(tile: DiscoveryTile) {
     if (tile.type === 'gym_spotlight' && tile.gymId) {
-      router.push({ pathname: '/gym/[gymId]', params: { gymId: tile.gymId } } as Parameters<typeof router.push>[0]);
+      navigate(router, { pathname: '/gym/[gymId]', params: { gymId: tile.gymId } });
     } else if (tile.problemId) {
-      router.push({ pathname: '/problem/[id]', params: { id: tile.problemId } } as Parameters<typeof router.push>[0]);
+      navigate(router, { pathname: '/problem/[id]', params: { id: tile.problemId } });
     }
   }
 

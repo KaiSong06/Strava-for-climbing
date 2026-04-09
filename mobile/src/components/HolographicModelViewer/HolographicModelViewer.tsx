@@ -12,7 +12,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Platform,
   StyleSheet,
   Text,
   View,
@@ -27,6 +26,15 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { colors } from '@/src/theme/colors';
 import { useModelLoader } from './useModelLoader';
 import { createHolographicMaterial } from './holographicMaterial';
+
+/**
+ * Minimal structural type for a loaded GLTF asset. The `three/examples/jsm`
+ * module ships no type declarations in the version pinned by this repo, so
+ * we declare the fields we actually read rather than falling back to `any`.
+ */
+interface GLTF {
+  scene: THREE.Group;
+}
 
 interface HolographicModelViewerProps {
   modelUrl: string;
@@ -124,11 +132,9 @@ export function HolographicModelViewer({
       if (arrayBuffer) {
         try {
           const loader = new GLTFLoader();
-          const gltf = await new Promise<any>(
-            (resolve, reject) => {
-              loader.parse(arrayBuffer, '', resolve, reject);
-            },
-          );
+          const gltf = await new Promise<GLTF>((resolve, reject) => {
+            loader.parse(arrayBuffer, '', resolve, reject);
+          });
 
           const model = gltf.scene;
 
