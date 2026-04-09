@@ -28,6 +28,8 @@ Sequential numbering: `migrations/NNN_description.sql`. Applied in alphabetical 
 | 007 | email_verification | Adds email_verified to users, creates email_verification_tokens (legacy, dropped in 008) |
 | 008 | supabase_auth | Adds phone column, drops password_hash/email/email_verified columns, drops refresh_tokens/email_verification_tokens/password_reset_tokens tables |
 | 009 | edit_profile | Adds username_changed_at column, indexes |
+| 010 | hardening | Partial index on uploads (pending, processing) for vision worker polling; CHECK constraint enforcing `vector_dims(hold_vector) = 200` on problems |
+| 011 | auth_trigger | Tracked version of the Supabase Auth → public.users trigger (`on_auth_user_created`). Guarded on the `auth` schema so it's a no-op in local/test environments that don't have Supabase |
 
 ## Seeds
 
@@ -36,7 +38,8 @@ Sequential numbering: `migrations/NNN_description.sql`. Applied in alphabetical 
 
 ## Key Schema Details
 
-- **hold_vector**: `vector(200)` — up to 100 holds x (x, y) coordinates, zero-padded. Sort centroids by y DESC before vectorising.
+- **hold_vector**: `vector(200)` — up to 100 holds x (x, y) coordinates, zero-padded. Sort centroids by y DESC before vectorising. Migration 010 adds a `CHECK (hold_vector IS NULL OR vector_dims(hold_vector) = 200)` constraint as a belt-and-suspenders safeguard against a vision worker bug silently inserting a wrong-dim vector.
 - **pgvector ANN**: Always pre-filter by `gym_id + colour` before cosine similarity search. The IVFFlat index (migration 004) has `lists=100`.
-- **Supabase Auth trigger**: A `handle_new_user()` trigger on `auth.users` auto-inserts into `public.users` — this must be created via Supabase SQL Editor (not through migrations, since it references the `auth` schema).
+- **Uploads polling index**: Migration 010 adds `idx_uploads_processing_active`, a partial btree on `(created_at) WHERE processing_status IN ('pending', 'processing')`, to keep status-filtered scans off of the much larger set of terminal rows.
+- **Supabase Auth trigger**: `public.handle_new_auth_user()` + `on_auth_user_created AFTER INSERT ON auth.users` auto-insert into `public.users`. Defined in migration 011, which is guarded on the presence of the `auth` schema so local/test environments (plain pgvector containers) apply it as a no-op. Do NOT create this trigger manually; it lives in version control now.
 - **Phone numbers**: Stored in E.164 format (e.g., `+15551000001`). UNIQUE constraint.
