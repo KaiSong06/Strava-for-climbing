@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useAuthStore } from '../stores/authStore';
-import type { FeedItem, PaginatedResponse } from '../../../shared/types';
+import type { FeedItem, PaginatedResponse } from '@shared/types';
 import type { FriendEntry, DiscoveryTile } from '../screens/Search/searchTypes';
 
 interface FriendWithActivity {

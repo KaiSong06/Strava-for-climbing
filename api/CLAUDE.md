@@ -78,6 +78,5 @@ Retries: 3 attempts, exponential backoff starting at 5s.
 
 ## TypeScript
 
-- `rootDir` is `./` (the api directory) — cannot import from `../shared/`
-- `AuthUser` is defined locally in `src/services/userService.ts`
+- Shared contract types live in `shared/types.ts` and are imported via the `@shared/*` path alias. Never duplicate a type across api and mobile.
 - Strict mode: no `any`, no unused locals/params, no implicit returns

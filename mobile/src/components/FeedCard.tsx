@@ -1,5 +1,5 @@
 import { Image, Pressable, StyleSheet, View, Text } from 'react-native';
-import type { FeedItem, AscentType } from '../../../shared/types';
+import type { FeedItem, AscentType } from '@shared/types';
 
 const TYPE_LABEL: Record<AscentType, string> = {
   flash: 'flashed',

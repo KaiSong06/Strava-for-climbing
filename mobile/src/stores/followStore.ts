@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { api } from '../lib/api';
-import type { PaginatedResponse, UserProfile } from '../../../shared/types';
+import type { PaginatedResponse, UserProfile } from '@shared/types';
 
 interface FollowState {
   /** userId → true for every user the current user follows */

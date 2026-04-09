@@ -6,7 +6,7 @@ import { FeedCard } from '@/src/components/FeedCard';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 import { typography } from '@/src/theme/typography';
-import type { FeedItem, PaginatedResponse } from '../../../shared/types';
+import type { FeedItem, PaginatedResponse } from '@shared/types';
 
 export default function AscentHistoryScreen() {
   const { username } = useLocalSearchParams<{ username: string }>();

@@ -15,7 +15,7 @@ import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { api } from '@/src/lib/api';
 import { useAuthStore } from '@/src/stores/authStore';
 import { colors } from '@/src/theme/colors';
-import type { PaginatedResponse, AscentType } from '../../../shared/types';
+import type { PaginatedResponse, AscentType } from '@shared/types';
 
 // expo-gl / expo-three are native-only — lazy import to prevent web bundle crash
 const HolographicModelViewer =

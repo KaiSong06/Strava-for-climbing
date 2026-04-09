@@ -20,7 +20,7 @@ import { CruxBanner, BANNER_HEIGHT } from '@/src/components/CruxBanner';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 import { typography } from '@/src/theme/typography';
-import type { PaginatedResponse } from '../../../shared/types';
+import type { PaginatedResponse } from '@shared/types';
 
 interface GymDetail {
   id: string;

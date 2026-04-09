@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/src/lib/api';
 import { useAuthStore } from '@/src/stores/authStore';
-import type { FeedItem, PaginatedResponse } from '../../../../shared/types';
+import type { FeedItem, PaginatedResponse } from '@shared/types';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 import { typography } from '@/src/theme/typography';

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import type { NearbyGym } from '../../../shared/types';
+import type { NearbyGym } from '@shared/types';
 
 interface NearbyGymsParams {
   lat: number;

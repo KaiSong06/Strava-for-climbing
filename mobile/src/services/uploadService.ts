@@ -1,6 +1,6 @@
 import { useAuthStore } from '../stores/authStore';
 import { api } from '../lib/api';
-import type { ProcessingStatus } from '../../../shared/types';
+import type { ProcessingStatus } from '@shared/types';
 
 const BASE_URL = process.env['EXPO_PUBLIC_API_URL'] ?? 'http://localhost:3001';
 
