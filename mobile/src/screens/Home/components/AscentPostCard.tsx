@@ -1,5 +1,6 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { colors } from '@/src/theme/colors';
 import { typography } from '@/src/theme/typography';
 import { spacing } from '@/src/theme/spacing';
@@ -64,17 +65,19 @@ export function AscentPostCard({ item }: { item: AscentPostData }) {
             <Text style={styles.meta}>{formatRelativeTime(item.logged_at)}</Text>
           </View>
         </View>
-        <Pressable
+        <AccessiblePressable
           onPress={() => console.log('Menu pressed')}
           hitSlop={8}
           style={({ pressed }) => pressed && styles.pressed}
+          accessibilityLabel={`More options for ${item.display_name}'s ascent`}
+          accessibilityRole="button"
         >
           <MaterialCommunityIcons
             name="dots-horizontal"
             size={24}
             color={colors.onSurfaceVariant}
           />
-        </Pressable>
+        </AccessiblePressable>
       </View>
 
       {/* ── Image + Badge ──────────────────────────── */}
@@ -95,50 +98,58 @@ export function AscentPostCard({ item }: { item: AscentPostData }) {
         {/* Interaction bar */}
         <View style={styles.interactionBar}>
           <View style={styles.interactionLeft}>
-            <Pressable
+            <AccessiblePressable
               onPress={() => console.log('Like pressed')}
               style={({ pressed }) => pressed && styles.pressed}
+              accessibilityLabel={`Like ${item.display_name}'s ascent`}
+              accessibilityRole="button"
             >
               <MaterialCommunityIcons
                 name="heart-outline"
                 size={24}
                 color={colors.onSurfaceVariant}
               />
-            </Pressable>
+            </AccessiblePressable>
 
-            <Pressable
+            <AccessiblePressable
               onPress={() => console.log('Comments pressed')}
               style={({ pressed }) => pressed && styles.pressed}
+              accessibilityLabel={`Comment on ${item.display_name}'s ascent`}
+              accessibilityRole="button"
             >
               <MaterialCommunityIcons
                 name="chat-outline"
                 size={24}
                 color={colors.onSurfaceVariant}
               />
-            </Pressable>
+            </AccessiblePressable>
 
-            <Pressable
+            <AccessiblePressable
               onPress={() => console.log('Share pressed')}
               style={({ pressed }) => pressed && styles.pressed}
+              accessibilityLabel={`Share ${item.display_name}'s ascent`}
+              accessibilityRole="button"
             >
               <MaterialCommunityIcons
                 name="share-outline"
                 size={24}
                 color={colors.onSurfaceVariant}
               />
-            </Pressable>
+            </AccessiblePressable>
           </View>
 
-          <Pressable
+          <AccessiblePressable
             onPress={() => console.log('Bookmark pressed')}
             style={({ pressed }) => pressed && styles.pressed}
+            accessibilityLabel={`Bookmark ${item.display_name}'s ascent`}
+            accessibilityRole="button"
           >
             <MaterialCommunityIcons
               name="bookmark-outline"
               size={24}
               color={colors.onSurfaceVariant}
             />
-          </Pressable>
+          </AccessiblePressable>
         </View>
 
         {/* Notes */}
@@ -151,9 +162,13 @@ export function AscentPostCard({ item }: { item: AscentPostData }) {
         )}
 
         {/* View all comments */}
-        <Pressable onPress={() => console.log('View comments pressed')}>
+        <AccessiblePressable
+          onPress={() => console.log('View comments pressed')}
+          accessibilityLabel={`View all comments on ${item.display_name}'s ascent`}
+          accessibilityRole="button"
+        >
           <Text style={styles.viewComments}>VIEW ALL COMMENTS</Text>
-        </Pressable>
+        </AccessiblePressable>
       </View>
     </View>
   );

@@ -1,5 +1,6 @@
 import { useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, StyleSheet, Text, View } from 'react-native';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { colors } from '@/src/theme/colors';
 
 export interface AscentActivity {
@@ -49,13 +50,16 @@ export function ActivityCard({ activity, onPress }: Props) {
   }
 
   const badge = BADGE_STYLES[activity.ascentType];
+  const accessibilityLabel = `${badge.label.toLowerCase()} of ${activity.colour} ${activity.grade} at ${activity.gymName}`;
 
   return (
-    <Pressable
+    <AccessiblePressable
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       onPress={onPress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
     >
       <View style={styles.imageContainer}>
         {activity.imageUrl ? (
@@ -82,7 +86,7 @@ export function ActivityCard({ activity, onPress }: Props) {
           <Text style={[styles.typeBadgeText, { color: badge.color }]}>{badge.label}</Text>
         </View>
       </View>
-    </Pressable>
+    </AccessiblePressable>
   );
 }
 

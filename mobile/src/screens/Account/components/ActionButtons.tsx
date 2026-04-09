@@ -1,6 +1,7 @@
 import { useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { colors } from '@/src/theme/colors';
 
 interface AnimatedButtonProps {
@@ -32,11 +33,17 @@ function AnimatedButton({ onPress, style, textStyle, label }: AnimatedButtonProp
   }
 
   return (
-    <Pressable onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut}>
+    <AccessiblePressable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      accessibilityLabel={label}
+      accessibilityRole="button"
+    >
       <Animated.View style={[style, { transform: [{ scale }] }]}>
         <Text style={textStyle}>{label}</Text>
       </Animated.View>
-    </Pressable>
+    </AccessiblePressable>
   );
 }
 

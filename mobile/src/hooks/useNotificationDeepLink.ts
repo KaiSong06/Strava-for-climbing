@@ -51,9 +51,12 @@ function parseNotificationData(data: Record<string, unknown>): NotificationData 
  *  - unknown type                    -> no-op (app just opens)
  */
 export function useNotificationDeepLink(): void {
-  // Push notifications are not available on web
+  // Push notifications are not available on web. Platform.OS is constant for
+  // the lifetime of the JS bundle, so calling the underlying hook conditionally
+  // is safe — but the lint rule can't statically prove that.
   if (Platform.OS === 'web') return;
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useNotificationDeepLinkNative();
 }
 

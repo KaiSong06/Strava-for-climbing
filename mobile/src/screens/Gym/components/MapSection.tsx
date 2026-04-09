@@ -111,6 +111,8 @@ export function MapSection({ onSearch, isSearching, searchError, gyms, region }:
             onChangeText={setQuery}
             onSubmitEditing={handleSubmit}
             editable={!isSearching}
+            accessibilityLabel="Search for a gym by address"
+            accessibilityHint="Enter an address and press search to find nearby gyms"
           />
         </View>
         {searchError && <Text style={styles.errorText}>{searchError}</Text>}

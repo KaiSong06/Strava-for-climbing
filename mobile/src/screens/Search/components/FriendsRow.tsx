@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 import type { FriendEntry } from '../searchTypes';
@@ -42,24 +43,32 @@ export function FriendsRow({ friends, onFriendPress }: FriendsRowProps) {
     <View style={styles.section}>
       <View style={styles.header}>
         <Text style={styles.title}>Friends</Text>
-        <Pressable onPress={() => setExpanded((prev) => !prev)} hitSlop={8}>
+        <AccessiblePressable
+          onPress={() => setExpanded((prev) => !prev)}
+          hitSlop={8}
+          accessibilityLabel={expanded ? 'Show fewer friends' : 'View all friends'}
+          accessibilityRole="button"
+          accessibilityState={{ expanded }}
+        >
           <Text style={styles.viewAll}>{expanded ? 'Show less' : 'View all'}</Text>
-        </Pressable>
+        </AccessiblePressable>
       </View>
 
       {expanded ? (
         <View style={styles.listContent}>
           {friends.map((friend) => (
-            <Pressable
+            <AccessiblePressable
               key={friend.id}
               style={styles.listItem}
               onPress={() => onFriendPress?.(friend)}
+              accessibilityLabel={`Open profile for ${friend.username}`}
+              accessibilityRole="button"
             >
               <AvatarWithRing friend={friend} />
               <Text style={styles.listUsername} numberOfLines={1}>
                 {friend.username}
               </Text>
-            </Pressable>
+            </AccessiblePressable>
           ))}
         </View>
       ) : (
@@ -69,16 +78,18 @@ export function FriendsRow({ friends, onFriendPress }: FriendsRowProps) {
           contentContainerStyle={styles.scrollContent}
         >
           {friends.map((friend) => (
-            <Pressable
+            <AccessiblePressable
               key={friend.id}
               style={styles.friendItem}
               onPress={() => onFriendPress?.(friend)}
+              accessibilityLabel={`Open profile for ${friend.username}`}
+              accessibilityRole="button"
             >
               <AvatarWithRing friend={friend} />
               <Text style={styles.username} numberOfLines={1}>
                 {friend.username}
               </Text>
-            </Pressable>
+            </AccessiblePressable>
           ))}
         </ScrollView>
       )}

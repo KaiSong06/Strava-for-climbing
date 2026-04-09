@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -11,6 +10,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { supabase } from '@/src/lib/supabase';
 import { useAuthStore } from '@/src/stores/authStore';
 import { colors } from '@/src/theme/colors';
@@ -84,6 +84,8 @@ export default function VerifyPhoneScreen() {
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <TextInput
+            accessibilityLabel="Verification code"
+            accessibilityHint="Enter the 6-digit code from your SMS"
             style={styles.input}
             placeholder="6-digit code"
             placeholderTextColor={colors.outline}
@@ -94,7 +96,9 @@ export default function VerifyPhoneScreen() {
             onSubmitEditing={handleVerify}
           />
 
-          <Pressable
+          <AccessiblePressable
+            accessibilityLabel="Verify phone"
+            accessibilityState={{ busy: loading, disabled: loading }}
             style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleVerify}
             disabled={loading}
@@ -104,11 +108,15 @@ export default function VerifyPhoneScreen() {
             ) : (
               <Text style={styles.buttonText}>Verify</Text>
             )}
-          </Pressable>
+          </AccessiblePressable>
 
-          <Pressable onPress={handleResend} disabled={loading}>
+          <AccessiblePressable
+            accessibilityLabel="Resend verification code"
+            onPress={handleResend}
+            disabled={loading}
+          >
             <Text style={styles.linkText}>Resend code</Text>
-          </Pressable>
+          </AccessiblePressable>
         </View>
       </KeyboardAvoidingView>
     </View>

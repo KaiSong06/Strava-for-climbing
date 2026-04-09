@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,6 +9,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { api } from '@/src/lib/api';
 
 interface ProblemSummary {
@@ -97,15 +97,17 @@ export default function LogAscentScreen() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.gradeScroll}>
         <View style={styles.gradeRow}>
           {GRADES.map((g) => (
-            <Pressable
+            <AccessiblePressable
               key={g}
+              accessibilityLabel={`Grade ${g}`}
+              accessibilityState={{ selected: grade === g }}
               style={[styles.gradeChip, grade === g && styles.gradeChipSelected]}
               onPress={() => setGrade(g === grade ? null : g)}
             >
               <Text style={[styles.gradeChipText, grade === g && styles.gradeChipTextSelected]}>
                 {g}
               </Text>
-            </Pressable>
+            </AccessiblePressable>
           ))}
         </View>
       </ScrollView>
@@ -113,14 +115,21 @@ export default function LogAscentScreen() {
       <Text style={styles.label}>Rating</Text>
       <View style={styles.starRow}>
         {[1, 2, 3, 4, 5].map((n) => (
-          <Pressable key={n} onPress={() => setRating(n === rating ? null : n)}>
+          <AccessiblePressable
+            key={n}
+            accessibilityLabel={`Rate ${n} star${n === 1 ? '' : 's'}`}
+            accessibilityState={{ selected: (rating ?? 0) >= n }}
+            onPress={() => setRating(n === rating ? null : n)}
+          >
             <Text style={[styles.star, (rating ?? 0) >= n && styles.starFilled]}>★</Text>
-          </Pressable>
+          </AccessiblePressable>
         ))}
       </View>
 
       <Text style={styles.label}>Notes</Text>
       <TextInput
+        accessibilityLabel="Notes"
+        accessibilityHint="Add any beta, conditions, or thoughts about this climb"
         style={styles.notesInput}
         value={notes}
         onChangeText={setNotes}
@@ -134,21 +143,25 @@ export default function LogAscentScreen() {
       <Text style={styles.label}>Visibility</Text>
       <View style={styles.visRow}>
         {VISIBILITY.map((v) => (
-          <Pressable
+          <AccessiblePressable
             key={v}
+            accessibilityLabel={`Visibility: ${v}`}
+            accessibilityState={{ selected: visibility === v }}
             style={[styles.visChip, visibility === v && styles.visChipSelected]}
             onPress={() => setVisibility(v)}
           >
             <Text style={[styles.visChipText, visibility === v && styles.visChipTextSelected]}>
               {v.charAt(0).toUpperCase() + v.slice(1)}
             </Text>
-          </Pressable>
+          </AccessiblePressable>
         ))}
       </View>
 
       {error && <Text style={styles.errorText}>{error}</Text>}
 
-      <Pressable
+      <AccessiblePressable
+        accessibilityLabel="Log ascent"
+        accessibilityState={{ busy: submitting, disabled: submitting }}
         style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
         onPress={handleSubmit}
         disabled={submitting}
@@ -158,7 +171,7 @@ export default function LogAscentScreen() {
         ) : (
           <Text style={styles.submitBtnText}>Log ascent</Text>
         )}
-      </Pressable>
+      </AccessiblePressable>
     </ScrollView>
   );
 }

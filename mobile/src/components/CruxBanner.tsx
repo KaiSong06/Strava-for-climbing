@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { AccessiblePressable } from './ui/AccessiblePressable';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
@@ -17,13 +18,15 @@ export function CruxBanner({ onNotificationsPress }: CruxBannerProps) {
     <View style={[styles.container, { paddingTop: insets.top + spacing.sm }]}>
       <View style={styles.inner}>
         <Text style={styles.wordmark}>CRUX</Text>
-        <Pressable
+        <AccessiblePressable
           onPress={onNotificationsPress}
           style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
           hitSlop={8}
+          accessibilityLabel="Notifications"
+          accessibilityRole="button"
         >
           <MaterialCommunityIcons name="bell-outline" size={24} color={colors.primary} />
-        </Pressable>
+        </AccessiblePressable>
       </View>
     </View>
   );

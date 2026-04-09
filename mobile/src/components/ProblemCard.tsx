@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { AccessiblePressable } from './ui/AccessiblePressable';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 import { typography } from '@/src/theme/typography';
@@ -21,10 +22,18 @@ export function ProblemCard({
   retired = false,
   onPress,
 }: ProblemCardProps) {
+  const gradeLabel = consensus_grade ?? 'ungraded';
+  const sendsLabel = total_sends === 1 ? '1 send' : `${total_sends} sends`;
+  const flashLabel = flash_count > 0 ? `, ${flash_count} flashes` : '';
+  const retiredLabel = retired ? ', retired' : '';
+  const accessibilityLabel = `${gradeLabel} problem, ${sendsLabel}${flashLabel}${retiredLabel}`;
+
   return (
-    <Pressable
+    <AccessiblePressable
       style={({ pressed }) => [styles.card, retired && styles.retired, pressed && styles.pressed]}
       onPress={onPress}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled: retired }}
     >
       <View style={[styles.swatch, { backgroundColor: colour }]} />
       <View style={styles.info}>
@@ -34,7 +43,7 @@ export function ProblemCard({
           {flash_count > 0 && <Text style={styles.flash}>{flash_count} ⚡</Text>}
         </View>
       </View>
-    </Pressable>
+    </AccessiblePressable>
   );
 }
 

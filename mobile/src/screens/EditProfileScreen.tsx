@@ -4,7 +4,6 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,6 +22,7 @@ import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 import { typography } from '@/src/theme/typography';
 import { BANNER_HEIGHT } from '@/src/components/CruxBanner';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 
 type Visibility = 'public' | 'friends' | 'private';
 
@@ -192,26 +192,31 @@ export default function EditProfileScreen() {
       <View style={[styles.banner, { paddingTop: insets.top + spacing.sm }]}>
         <View style={styles.bannerInner}>
           <View style={styles.bannerLeft}>
-            <Pressable
+            <AccessiblePressable
               onPress={() => router.back()}
               style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
               hitSlop={8}
+              accessibilityLabel="Go back"
+              accessibilityRole="button"
             >
               <MaterialCommunityIcons name="arrow-left" size={24} color={colors.primary} />
-            </Pressable>
+            </AccessiblePressable>
             <Text style={styles.wordmark}>CRUX</Text>
           </View>
-          <Pressable
+          <AccessiblePressable
             onPress={handleSave}
             disabled={loading}
             style={({ pressed }) => [styles.saveBtn, pressed && styles.iconBtnPressed]}
+            accessibilityLabel="Save profile changes"
+            accessibilityRole="button"
+            accessibilityState={{ disabled: loading, busy: loading }}
           >
             {loading ? (
               <ActivityIndicator size="small" color={colors.primary} />
             ) : (
               <Text style={styles.saveText}>Save</Text>
             )}
-          </Pressable>
+          </AccessiblePressable>
         </View>
       </View>
 
@@ -229,7 +234,12 @@ export default function EditProfileScreen() {
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           {/* Avatar */}
-          <Pressable style={styles.avatarContainer} onPress={handlePickAvatar}>
+          <AccessiblePressable
+            style={styles.avatarContainer}
+            onPress={handlePickAvatar}
+            accessibilityLabel="Change profile photo"
+            accessibilityRole="button"
+          >
             {avatarUri ? (
               <Image source={{ uri: avatarUri }} style={styles.avatar} />
             ) : (
@@ -240,7 +250,7 @@ export default function EditProfileScreen() {
               </View>
             )}
             <Text style={styles.changePhotoText}>Change photo</Text>
-          </Pressable>
+          </AccessiblePressable>
 
           {/* Display Name */}
           <View style={styles.fieldGroup}>
@@ -253,6 +263,7 @@ export default function EditProfileScreen() {
               placeholderTextColor={colors.outline}
               maxLength={50}
               autoCapitalize="words"
+              accessibilityLabel="Display name"
             />
           </View>
 
@@ -269,6 +280,7 @@ export default function EditProfileScreen() {
               autoCorrect={false}
               editable={!usernameLocked}
               maxLength={20}
+              accessibilityLabel="Username"
             />
             {usernameLocked && usernameUnlockDate && (
               <Text style={styles.hint}>
@@ -284,11 +296,18 @@ export default function EditProfileScreen() {
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>HOME GYM</Text>
             {!showGymSearch ? (
-              <Pressable style={styles.input} onPress={() => setShowGymSearch(true)}>
+              <AccessiblePressable
+                style={styles.input}
+                onPress={() => setShowGymSearch(true)}
+                accessibilityLabel={
+                  homeGymName ? `Home gym: ${homeGymName}. Tap to change.` : 'Select a home gym'
+                }
+                accessibilityRole="button"
+              >
                 <Text style={homeGymName ? styles.inputText : styles.placeholderText}>
                   {homeGymName || 'Select a gym'}
                 </Text>
-              </Pressable>
+              </AccessiblePressable>
             ) : (
               <>
                 <TextInput
@@ -298,27 +317,34 @@ export default function EditProfileScreen() {
                   placeholder="Search gyms..."
                   placeholderTextColor={colors.outline}
                   autoFocus
+                  accessibilityLabel="Search gyms"
                 />
                 {gymResults.length > 0 && (
                   <View style={styles.gymResults}>
                     {gymResults.map((gym) => (
-                      <Pressable
+                      <AccessiblePressable
                         key={gym.id}
                         style={styles.gymResultItem}
                         onPress={() => handleSelectGym(gym)}
+                        accessibilityLabel={`Select ${gym.name} in ${gym.city}`}
+                        accessibilityRole="button"
                       >
                         <Text style={styles.gymResultName}>{gym.name}</Text>
                         <Text style={styles.gymResultCity}>{gym.city}</Text>
-                      </Pressable>
+                      </AccessiblePressable>
                     ))}
                   </View>
                 )}
               </>
             )}
             {homeGymName ? (
-              <Pressable onPress={handleClearGym}>
+              <AccessiblePressable
+                onPress={handleClearGym}
+                accessibilityLabel="Clear home gym"
+                accessibilityRole="button"
+              >
                 <Text style={styles.clearText}>Clear gym</Text>
-              </Pressable>
+              </AccessiblePressable>
             ) : null}
           </View>
 
@@ -327,13 +353,16 @@ export default function EditProfileScreen() {
             <Text style={styles.label}>DEFAULT ASCENT VISIBILITY</Text>
             <View style={styles.visibilityRow}>
               {(['public', 'friends', 'private'] as const).map((v) => (
-                <Pressable
+                <AccessiblePressable
                   key={v}
                   style={[
                     styles.visibilityOption,
                     defaultVisibility === v && styles.visibilityOptionActive,
                   ]}
                   onPress={() => setDefaultVisibility(v)}
+                  accessibilityLabel={`Default visibility: ${v}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: defaultVisibility === v }}
                 >
                   <Text
                     style={[
@@ -343,7 +372,7 @@ export default function EditProfileScreen() {
                   >
                     {v.charAt(0).toUpperCase() + v.slice(1)}
                   </Text>
-                </Pressable>
+                </AccessiblePressable>
               ))}
             </View>
             <Text style={styles.hint}>

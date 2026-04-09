@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 import { typography } from '@/src/theme/typography';
@@ -12,10 +13,16 @@ interface Props {
 }
 
 export function GymCard({ gym, onPress, distance_km }: Props) {
+  const distanceLabel =
+    distance_km != null ? `, ${Number(distance_km).toFixed(1)} kilometres away` : '';
+  const accessibilityLabel = `${gym.name}, ${gym.city}${distanceLabel}`;
+
   return (
-    <Pressable
+    <AccessiblePressable
       onPress={() => onPress(gym)}
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
     >
       <View style={styles.infoRow}>
         <View style={styles.infoText}>
@@ -29,7 +36,7 @@ export function GymCard({ gym, onPress, distance_km }: Props) {
           <MaterialCommunityIcons name="arrow-right" size={20} color={colors.onPrimary} />
         </View>
       </View>
-    </Pressable>
+    </AccessiblePressable>
   );
 }
 

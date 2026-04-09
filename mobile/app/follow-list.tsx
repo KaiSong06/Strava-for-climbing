@@ -3,13 +3,13 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
-  Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { api } from '@/src/lib/api';
 import { FollowButton } from '@/src/components/FollowButton';
 import { useAuthStore } from '@/src/stores/authStore';
@@ -86,7 +86,11 @@ function UserRow({
   const initial = user.display_name[0]?.toUpperCase() ?? '?';
 
   return (
-    <Pressable style={styles.row} onPress={onPress}>
+    <AccessiblePressable
+      accessibilityLabel={`Open ${user.display_name}'s profile`}
+      style={styles.row}
+      onPress={onPress}
+    >
       {user.avatar_url ? (
         <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
       ) : (
@@ -101,7 +105,7 @@ function UserRow({
       {myUserId && myUserId !== user.id && (
         <FollowButton username={user.username} userId={user.id} />
       )}
-    </Pressable>
+    </AccessiblePressable>
   );
 }
 

@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { colors } from '@/src/theme/colors';
 import { ActivityCard, type AscentActivity } from './ActivityCard';
 
@@ -13,9 +14,14 @@ export function RecentActivity({ activities, onViewAll, onActivityPress }: Props
     <View style={styles.section}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Recent Activity</Text>
-        <Pressable onPress={onViewAll} hitSlop={8}>
+        <AccessiblePressable
+          onPress={onViewAll}
+          hitSlop={8}
+          accessibilityLabel="View all recent activity"
+          accessibilityRole="button"
+        >
           <Text style={styles.viewAll}>VIEW ALL</Text>
-        </Pressable>
+        </AccessiblePressable>
       </View>
 
       {activities.length === 0 ? (

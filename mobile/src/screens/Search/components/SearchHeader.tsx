@@ -30,6 +30,7 @@ export function SearchHeader({ bannerHeight = 0 }: SearchHeaderProps) {
             autoCorrect={false}
             autoCapitalize="none"
             returnKeyType="search"
+            accessibilityLabel="Search climbs, gyms, and athletes"
           />
         </View>
       </View>

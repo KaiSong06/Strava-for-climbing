@@ -2,7 +2,6 @@ import { lazy, Suspense, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,6 +15,7 @@ import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 import { typography } from '@/src/theme/typography';
 import { api } from '@/src/lib/api';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { CruxBanner, BANNER_HEIGHT } from '@/src/components/CruxBanner';
 import { useGeocode } from '@/src/hooks/useGeocode';
 import { useNearbyGyms } from '@/src/hooks/useNearbyGyms';
@@ -96,12 +96,14 @@ export default function GymScreen() {
             <Text style={styles.sectionTitle}>NEARBY HUBS</Text>
             <Text style={styles.sectionSubtitle}>TRAINING GROUNDS IN YOUR AREA</Text>
           </View>
-          <Pressable
+          <AccessiblePressable
             style={({ pressed }) => [styles.filterButton, pressed && { opacity: 0.7 }]}
             hitSlop={8}
+            accessibilityLabel="Filter gyms"
+            accessibilityRole="button"
           >
             <MaterialCommunityIcons name="tune-variant" size={24} color={colors.primary} />
-          </Pressable>
+          </AccessiblePressable>
         </View>
 
         {/* ── Gym cards feed ───────────────────────────────────────────── */}

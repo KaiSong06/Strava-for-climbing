@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -12,6 +11,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { Link } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { supabase } from '@/src/lib/supabase';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
@@ -68,6 +68,8 @@ export default function LoginScreen() {
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <TextInput
+            accessibilityLabel="Phone number"
+            accessibilityHint="Enter your 10-digit phone number"
             style={styles.input}
             placeholder="Phone number (10 digits)"
             placeholderTextColor={colors.outline}
@@ -77,6 +79,8 @@ export default function LoginScreen() {
             onChangeText={setPhone}
           />
           <TextInput
+            accessibilityLabel="Password"
+            accessibilityHint="Enter your account password"
             style={styles.input}
             placeholder="Password"
             placeholderTextColor={colors.outline}
@@ -87,7 +91,9 @@ export default function LoginScreen() {
             onSubmitEditing={handleLogin}
           />
 
-          <Pressable
+          <AccessiblePressable
+            accessibilityLabel="Sign in"
+            accessibilityState={{ busy: loading, disabled: loading }}
             style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleLogin}
             disabled={loading}
@@ -97,7 +103,7 @@ export default function LoginScreen() {
             ) : (
               <Text style={styles.buttonText}>Sign in</Text>
             )}
-          </Pressable>
+          </AccessiblePressable>
 
           <Link href="/(auth)/register" style={styles.link}>
             <Text style={styles.linkText}>Don&apos;t have an account? Register</Text>

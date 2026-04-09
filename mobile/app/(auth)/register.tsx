@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +12,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { Link } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { supabase } from '@/src/lib/supabase';
 import { useAuthStore } from '@/src/stores/authStore';
 import { colors } from '@/src/theme/colors';
@@ -144,6 +144,8 @@ export default function RegisterScreen() {
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
             <TextInput
+              accessibilityLabel="Verification code"
+              accessibilityHint="Enter the 6-digit code from your SMS"
               style={styles.input}
               placeholder="6-digit code"
               placeholderTextColor={colors.outline}
@@ -154,7 +156,9 @@ export default function RegisterScreen() {
               onSubmitEditing={handleVerifyOtp}
             />
 
-            <Pressable
+            <AccessiblePressable
+              accessibilityLabel="Verify phone"
+              accessibilityState={{ busy: loading, disabled: loading }}
               style={[styles.button, loading && styles.buttonDisabled]}
               onPress={handleVerifyOtp}
               disabled={loading}
@@ -164,11 +168,15 @@ export default function RegisterScreen() {
               ) : (
                 <Text style={styles.buttonText}>Verify</Text>
               )}
-            </Pressable>
+            </AccessiblePressable>
 
-            <Pressable onPress={handleResendCode} disabled={loading}>
+            <AccessiblePressable
+              accessibilityLabel="Resend verification code"
+              onPress={handleResendCode}
+              disabled={loading}
+            >
               <Text style={styles.linkText}>Resend code</Text>
-            </Pressable>
+            </AccessiblePressable>
           </View>
         </KeyboardAvoidingView>
       </View>
@@ -191,6 +199,8 @@ export default function RegisterScreen() {
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <TextInput
+            accessibilityLabel="Phone number"
+            accessibilityHint="Enter your 10-digit phone number"
             style={styles.input}
             placeholder="Phone number (10 digits)"
             placeholderTextColor={colors.outline}
@@ -200,6 +210,8 @@ export default function RegisterScreen() {
             onChangeText={setPhone}
           />
           <TextInput
+            accessibilityLabel="Username"
+            accessibilityHint="Choose a username, 3 to 20 characters"
             style={styles.input}
             placeholder="Username"
             placeholderTextColor={colors.outline}
@@ -210,6 +222,8 @@ export default function RegisterScreen() {
             onChangeText={setUsername}
           />
           <TextInput
+            accessibilityLabel="Password"
+            accessibilityHint="Enter at least 8 characters"
             style={styles.input}
             placeholder="Password (min 8 characters)"
             placeholderTextColor={colors.outline}
@@ -219,6 +233,8 @@ export default function RegisterScreen() {
             onChangeText={setPassword}
           />
           <TextInput
+            accessibilityLabel="Confirm password"
+            accessibilityHint="Re-enter your password"
             style={styles.input}
             placeholder="Confirm password"
             placeholderTextColor={colors.outline}
@@ -229,7 +245,9 @@ export default function RegisterScreen() {
             onSubmitEditing={handleSignUp}
           />
 
-          <Pressable
+          <AccessiblePressable
+            accessibilityLabel="Create account"
+            accessibilityState={{ busy: loading, disabled: loading }}
             style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleSignUp}
             disabled={loading}
@@ -239,7 +257,7 @@ export default function RegisterScreen() {
             ) : (
               <Text style={styles.buttonText}>Create account</Text>
             )}
-          </Pressable>
+          </AccessiblePressable>
 
           <Link href="/(auth)/login" style={styles.link}>
             <Text style={styles.linkText}>Already have an account? Sign in</Text>

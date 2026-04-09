@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useFollowStore } from '../stores/followStore';
 import { ApiError } from '../lib/api';
+import { AccessiblePressable } from './ui/AccessiblePressable';
 
 interface FollowButtonProps {
   username: string;
@@ -36,11 +37,15 @@ export function FollowButton({ username, userId }: FollowButtonProps) {
     }
   }
 
+  const accessibilityLabel = following ? `Unfollow ${username}` : `Follow ${username}`;
+
   return (
-    <Pressable
+    <AccessiblePressable
       style={[styles.button, following ? styles.following : styles.follow]}
       onPress={handlePress}
       disabled={isPending}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled: isPending, selected: following, busy: isPending }}
     >
       {isPending ? (
         <ActivityIndicator size="small" color={following ? '#374151' : '#fff'} />
@@ -49,7 +54,7 @@ export function FollowButton({ username, userId }: FollowButtonProps) {
           {following ? 'Following' : 'Follow'}
         </Text>
       )}
-    </Pressable>
+    </AccessiblePressable>
   );
 }
 

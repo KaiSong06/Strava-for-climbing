@@ -1,6 +1,7 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { AuthUser } from '../../../../../shared/types';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { colors } from '@/src/theme/colors';
 
 interface Props {
@@ -42,14 +43,26 @@ export function ProfileHeader({ profile, onFollowersPress, onFollowingPress }: P
 
       {/* Stats */}
       <View style={styles.statsRow}>
-        <Pressable style={styles.stat} onPress={onFollowersPress} hitSlop={8}>
+        <AccessiblePressable
+          style={styles.stat}
+          onPress={onFollowersPress}
+          hitSlop={8}
+          accessibilityLabel={`${profile.follower_count} followers, view followers list`}
+          accessibilityRole="button"
+        >
           <Text style={styles.statCount}>{formatCount(profile.follower_count)}</Text>
           <Text style={styles.statLabel}>FOLLOWERS</Text>
-        </Pressable>
-        <Pressable style={styles.stat} onPress={onFollowingPress} hitSlop={8}>
+        </AccessiblePressable>
+        <AccessiblePressable
+          style={styles.stat}
+          onPress={onFollowingPress}
+          hitSlop={8}
+          accessibilityLabel={`Following ${profile.following_count}, view following list`}
+          accessibilityRole="button"
+        >
           <Text style={styles.statCount}>{formatCount(profile.following_count)}</Text>
           <Text style={styles.statLabel}>FOLLOWING</Text>
-        </Pressable>
+        </AccessiblePressable>
       </View>
     </View>
   );

@@ -7,7 +7,6 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -30,6 +29,7 @@ import Animated, {
 import { useVisionPipeline } from '@/src/hooks/useVisionPipeline';
 import { useMatchResult } from '@/src/hooks/useMatchResult';
 import { useAuthStore } from '@/src/stores/authStore';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
@@ -278,34 +278,53 @@ export default function RecordScreen() {
         >
           {/* PROJECT */}
           <Text style={styles.sectionLabel}>Project</Text>
-          <Pressable style={styles.pickerRow} onPress={() => setProjectPickerVisible(true)}>
+          <AccessiblePressable
+            style={styles.pickerRow}
+            onPress={() => setProjectPickerVisible(true)}
+            accessibilityLabel={
+              project
+                ? `Project: ${[...PROJECTS, ...customProjects].find((p) => p.id === project)?.label ?? 'Unknown'}. Tap to change.`
+                : 'Select a project'
+            }
+            accessibilityRole="button"
+          >
             <Text style={[styles.pickerText, !project && styles.pickerPlaceholder]}>
               {project
                 ? ([...PROJECTS, ...customProjects].find((p) => p.id === project)?.label ?? 'Unknown')
                 : 'Select Project'}
             </Text>
             <MaterialCommunityIcons name="chevron-down" size={20} color={colors.onSurfaceVariant} />
-          </Pressable>
+          </AccessiblePressable>
 
           {/* MEDIA */}
           <View style={styles.mediaSectionGap} />
           {photos.length === 0 ? (
             <>
-              <Pressable style={styles.actionCard} onPress={handleCapturePhoto}>
+              <AccessiblePressable
+                style={styles.actionCard}
+                onPress={handleCapturePhoto}
+                accessibilityLabel="Capture photo with camera"
+                accessibilityRole="button"
+              >
                 <View style={[styles.iconCircle, { backgroundColor: 'rgba(168,200,255,0.1)' }]}>
                   <MaterialCommunityIcons name="camera" size={28} color={colors.primary} />
                 </View>
                 <Text style={styles.cardTitle}>Capture Photo</Text>
                 <Text style={styles.cardSubtitle}>Open camera to take a photo</Text>
-              </Pressable>
+              </AccessiblePressable>
 
-              <Pressable style={styles.actionCard} onPress={handleUploadFromLibrary}>
+              <AccessiblePressable
+                style={styles.actionCard}
+                onPress={handleUploadFromLibrary}
+                accessibilityLabel="Upload photos from your device library"
+                accessibilityRole="button"
+              >
                 <View style={[styles.iconCircle, { backgroundColor: 'rgba(178,199,240,0.1)' }]}>
                   <MaterialCommunityIcons name="cloud-upload" size={28} color={colors.secondary} />
                 </View>
                 <Text style={styles.cardTitle}>Upload from Library</Text>
                 <Text style={styles.cardSubtitle}>Choose from your device gallery</Text>
-              </Pressable>
+              </AccessiblePressable>
             </>
           ) : (
             <View>
@@ -321,18 +340,25 @@ export default function RecordScreen() {
                       style={styles.photoThumbImage}
                       resizeMode="cover"
                     />
-                    <Pressable
+                    <AccessiblePressable
                       style={styles.photoRemoveButton}
                       onPress={() => handleRemovePhoto(index)}
+                      accessibilityLabel={`Remove photo ${index + 1}`}
+                      accessibilityRole="button"
                     >
                       <MaterialCommunityIcons name="close" size={14} color={colors.onSurface} />
-                    </Pressable>
+                    </AccessiblePressable>
                   </View>
                 ))}
                 {photos.length < MAX_PHOTOS && (
-                  <Pressable style={styles.addPhotoButton} onPress={handleUploadFromLibrary}>
+                  <AccessiblePressable
+                    style={styles.addPhotoButton}
+                    onPress={handleUploadFromLibrary}
+                    accessibilityLabel="Add another photo"
+                    accessibilityRole="button"
+                  >
                     <MaterialCommunityIcons name="plus" size={24} color={colors.onSurfaceVariant} />
-                  </Pressable>
+                  </AccessiblePressable>
                 )}
               </ScrollView>
               <Text style={styles.photoCounter}>
@@ -343,7 +369,16 @@ export default function RecordScreen() {
 
           {/* HOLD COLOR */}
           <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>Hold Color</Text>
-          <Pressable style={styles.pickerRow} onPress={() => setColorPickerVisible(true)}>
+          <AccessiblePressable
+            style={styles.pickerRow}
+            onPress={() => setColorPickerVisible(true)}
+            accessibilityLabel={
+              holdColor
+                ? `Hold color: ${HOLD_COLOURS.find((c) => c.hex === holdColor)?.label ?? 'Unknown'}. Tap to change.`
+                : 'Select hold color'
+            }
+            accessibilityRole="button"
+          >
             <View style={styles.pickerRowInner}>
               {holdColor && <View style={[styles.colorDot, { backgroundColor: holdColor }]} />}
               <Text style={[styles.pickerText, !holdColor && styles.pickerPlaceholder]}>
@@ -353,25 +388,35 @@ export default function RecordScreen() {
               </Text>
             </View>
             <MaterialCommunityIcons name="chevron-down" size={20} color={colors.onSurfaceVariant} />
-          </Pressable>
+          </AccessiblePressable>
 
           {/* DIFFICULTY */}
           <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>Difficulty</Text>
-          <Pressable style={styles.pickerRow} onPress={() => setDifficultyPickerVisible(true)}>
+          <AccessiblePressable
+            style={styles.pickerRow}
+            onPress={() => setDifficultyPickerVisible(true)}
+            accessibilityLabel={
+              difficulty ? `Difficulty: ${difficulty}. Tap to change.` : 'Select difficulty grade'
+            }
+            accessibilityRole="button"
+          >
             <Text style={[styles.pickerText, !difficulty && styles.pickerPlaceholder]}>
               {difficulty ?? 'Select Grade/V-Scale'}
             </Text>
             <MaterialCommunityIcons name="chevron-down" size={20} color={colors.onSurfaceVariant} />
-          </Pressable>
+          </AccessiblePressable>
 
           {/* POST */}
-          <Pressable
+          <AccessiblePressable
             style={[styles.postButton, !isPostEnabled && styles.postButtonDisabled]}
             onPress={handlePost}
             disabled={!isPostEnabled}
+            accessibilityLabel="Post climb"
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !isPostEnabled }}
           >
             <Text style={styles.postButtonText}>Post</Text>
-          </Pressable>
+          </AccessiblePressable>
           {!gymId && (
             <Text style={styles.noGymHint}>Set your home gym in Settings to log climbs</Text>
           )}
@@ -404,12 +449,22 @@ export default function RecordScreen() {
                   <Text style={styles.confidenceText}>{confidence}% match</Text>
                 </View>
               )}
-              <Pressable style={styles.resultButtonPrimary} onPress={handleConfirmMatch}>
+              <AccessiblePressable
+                style={styles.resultButtonPrimary}
+                onPress={handleConfirmMatch}
+                accessibilityLabel="Log ascent for matched problem"
+                accessibilityRole="button"
+              >
                 <Text style={styles.resultButtonPrimaryText}>Log Ascent</Text>
-              </Pressable>
-              <Pressable style={styles.resultButtonSecondary} onPress={handleNewProblem}>
+              </AccessiblePressable>
+              <AccessiblePressable
+                style={styles.resultButtonSecondary}
+                onPress={handleNewProblem}
+                accessibilityLabel="Not my climb, create a new problem instead"
+                accessibilityRole="button"
+              >
                 <Text style={styles.resultButtonSecondaryText}>Not my climb — new problem</Text>
-              </Pressable>
+              </AccessiblePressable>
             </View>
           ) : needsConfirmation ? (
             <View style={styles.resultContent}>
@@ -425,13 +480,23 @@ export default function RecordScreen() {
                 </View>
               )}
               {matchedProblemId ? (
-                <Pressable style={styles.resultButtonPrimary} onPress={handleConfirmMatch}>
+                <AccessiblePressable
+                  style={styles.resultButtonPrimary}
+                  onPress={handleConfirmMatch}
+                  accessibilityLabel="Yes, log ascent for this problem"
+                  accessibilityRole="button"
+                >
                   <Text style={styles.resultButtonPrimaryText}>Yes, log it</Text>
-                </Pressable>
+                </AccessiblePressable>
               ) : null}
-              <Pressable style={styles.resultButtonSecondary} onPress={handleNewProblem}>
+              <AccessiblePressable
+                style={styles.resultButtonSecondary}
+                onPress={handleNewProblem}
+                accessibilityLabel="No, create a new problem instead"
+                accessibilityRole="button"
+              >
                 <Text style={styles.resultButtonSecondaryText}>No, it&apos;s a new problem</Text>
-              </Pressable>
+              </AccessiblePressable>
             </View>
           ) : isUnmatched ? (
             <View style={styles.resultContent}>
@@ -454,12 +519,22 @@ export default function RecordScreen() {
                   <Text style={styles.newProblemDetailText}>{difficulty}</Text>
                 </View>
               )}
-              <Pressable style={styles.resultButtonPrimary} onPress={handleNewProblem}>
+              <AccessiblePressable
+                style={styles.resultButtonPrimary}
+                onPress={handleNewProblem}
+                accessibilityLabel="Create new problem"
+                accessibilityRole="button"
+              >
                 <Text style={styles.resultButtonPrimaryText}>Create New Problem</Text>
-              </Pressable>
-              <Pressable style={styles.resultButtonSecondary} onPress={resetPipeline}>
+              </AccessiblePressable>
+              <AccessiblePressable
+                style={styles.resultButtonSecondary}
+                onPress={resetPipeline}
+                accessibilityLabel="Cancel and return to record screen"
+                accessibilityRole="button"
+              >
                 <Text style={styles.resultButtonSecondaryText}>Cancel</Text>
-              </Pressable>
+              </AccessiblePressable>
             </View>
           ) : null}
         </View>
@@ -476,15 +551,22 @@ export default function RecordScreen() {
           setProjectPickerVisible(false);
         }}
       >
-        <Pressable
+        <AccessiblePressable
           style={styles.modalBackdrop}
           onPress={() => {
             setCreatingProject(false);
             setNewProjectName('');
             setProjectPickerVisible(false);
           }}
+          accessibilityLabel="Close project picker"
+          accessibilityRole="button"
         >
-          <Pressable style={styles.modalSheet} onPress={() => {}}>
+          <AccessiblePressable
+            style={styles.modalSheet}
+            onPress={() => {}}
+            accessibilityLabel="Project picker"
+            accessibilityRole="none"
+          >
             <Text style={styles.modalTitle}>Project</Text>
 
             {creatingProject ? (
@@ -498,6 +580,7 @@ export default function RecordScreen() {
                   autoFocus
                   returnKeyType="done"
                   selectionColor={colors.primary}
+                  accessibilityLabel="New project name"
                   onSubmitEditing={() => {
                     const trimmed = newProjectName.trim();
                     if (!trimmed) return;
@@ -509,7 +592,7 @@ export default function RecordScreen() {
                     setProjectPickerVisible(false);
                   }}
                 />
-                <Pressable
+                <AccessiblePressable
                   style={[
                     styles.newProjectSaveButton,
                     !newProjectName.trim() && styles.postButtonDisabled,
@@ -524,29 +607,37 @@ export default function RecordScreen() {
                     setCreatingProject(false);
                     setProjectPickerVisible(false);
                   }}
+                  accessibilityLabel="Save new project"
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: !newProjectName.trim() }}
                 >
                   <Text style={styles.newProjectSaveText}>Save</Text>
-                </Pressable>
+                </AccessiblePressable>
               </View>
             ) : (
-              <Pressable
+              <AccessiblePressable
                 style={styles.modalRow}
                 onPress={() => setCreatingProject(true)}
+                accessibilityLabel="Create new project"
+                accessibilityRole="button"
               >
                 <Text style={[styles.modalRowText, styles.modalRowCreate]}>
                   + Create New Project
                 </Text>
-              </Pressable>
+              </AccessiblePressable>
             )}
 
             {[...PROJECTS, ...customProjects].map((p) => (
-              <Pressable
+              <AccessiblePressable
                 key={p.id}
                 style={styles.modalRow}
                 onPress={() => {
                   setProject(p.id);
                   setProjectPickerVisible(false);
                 }}
+                accessibilityLabel={`Select project ${p.label}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: project === p.id }}
               >
                 <Text style={[styles.modalRowText, project === p.id && styles.modalRowActiveText]}>
                   {p.label}
@@ -554,10 +645,10 @@ export default function RecordScreen() {
                 {project === p.id && (
                   <MaterialCommunityIcons name="check" size={16} color={colors.primary} />
                 )}
-              </Pressable>
+              </AccessiblePressable>
             ))}
-          </Pressable>
-        </Pressable>
+          </AccessiblePressable>
+        </AccessiblePressable>
       </Modal>
 
       {/* Hold color picker modal */}
@@ -567,18 +658,31 @@ export default function RecordScreen() {
         animationType="slide"
         onRequestClose={() => setColorPickerVisible(false)}
       >
-        <Pressable style={styles.modalBackdrop} onPress={() => setColorPickerVisible(false)}>
-          <Pressable style={styles.modalSheet} onPress={() => {}}>
+        <AccessiblePressable
+          style={styles.modalBackdrop}
+          onPress={() => setColorPickerVisible(false)}
+          accessibilityLabel="Close hold color picker"
+          accessibilityRole="button"
+        >
+          <AccessiblePressable
+            style={styles.modalSheet}
+            onPress={() => {}}
+            accessibilityLabel="Hold color picker"
+            accessibilityRole="none"
+          >
             <Text style={styles.modalTitle}>Hold Color</Text>
 
             {HOLD_COLOURS.map((color) => (
-              <Pressable
+              <AccessiblePressable
                 key={color.hex}
                 style={styles.modalRow}
                 onPress={() => {
                   setHoldColor(color.hex);
                   setColorPickerVisible(false);
                 }}
+                accessibilityLabel={`Select ${color.label} hold color`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: holdColor === color.hex }}
               >
                 <View style={styles.modalRowLeft}>
                   <View style={[styles.colorDot, { backgroundColor: color.hex }]} />
@@ -594,10 +698,10 @@ export default function RecordScreen() {
                 {holdColor === color.hex && (
                   <MaterialCommunityIcons name="check" size={16} color={colors.primary} />
                 )}
-              </Pressable>
+              </AccessiblePressable>
             ))}
-          </Pressable>
-        </Pressable>
+          </AccessiblePressable>
+        </AccessiblePressable>
       </Modal>
 
       {/* Difficulty picker modal */}
@@ -607,19 +711,32 @@ export default function RecordScreen() {
         animationType="slide"
         onRequestClose={() => setDifficultyPickerVisible(false)}
       >
-        <Pressable style={styles.modalBackdrop} onPress={() => setDifficultyPickerVisible(false)}>
-          <Pressable style={[styles.modalSheet, styles.modalSheetTall]} onPress={() => {}}>
+        <AccessiblePressable
+          style={styles.modalBackdrop}
+          onPress={() => setDifficultyPickerVisible(false)}
+          accessibilityLabel="Close difficulty picker"
+          accessibilityRole="button"
+        >
+          <AccessiblePressable
+            style={[styles.modalSheet, styles.modalSheetTall]}
+            onPress={() => {}}
+            accessibilityLabel="Difficulty picker"
+            accessibilityRole="none"
+          >
             <Text style={styles.modalTitle}>Difficulty</Text>
             <FlatList
               data={GRADES}
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
-                <Pressable
+                <AccessiblePressable
                   style={styles.modalRow}
                   onPress={() => {
                     setDifficulty(item);
                     setDifficultyPickerVisible(false);
                   }}
+                  accessibilityLabel={`Select grade ${item}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: difficulty === item }}
                 >
                   <Text
                     style={[styles.modalRowText, difficulty === item && styles.modalRowActiveText]}
@@ -629,11 +746,11 @@ export default function RecordScreen() {
                   {difficulty === item && (
                     <MaterialCommunityIcons name="check" size={16} color={colors.primary} />
                   )}
-                </Pressable>
+                </AccessiblePressable>
               )}
             />
-          </Pressable>
-        </Pressable>
+          </AccessiblePressable>
+        </AccessiblePressable>
       </Modal>
     </SafeAreaView>
   );

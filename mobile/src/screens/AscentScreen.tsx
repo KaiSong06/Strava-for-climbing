@@ -3,7 +3,6 @@ import {
   Dimensions,
   FlatList,
   Image,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,6 +11,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/src/lib/api';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 import { typography } from '@/src/theme/typography';
@@ -137,7 +137,7 @@ export default function AscentScreen() {
       contentContainerStyle={styles.scrollContent}
     >
       {/* User row */}
-      <Pressable
+      <AccessiblePressable
         style={styles.userRow}
         onPress={() =>
           router.push({
@@ -145,6 +145,8 @@ export default function AscentScreen() {
             params: { username: ascent.user.username },
           })
         }
+        accessibilityLabel={`Open profile for ${ascent.user.display_name}`}
+        accessibilityRole="button"
       >
         {ascent.user.avatar_url ? (
           <Image
@@ -161,7 +163,7 @@ export default function AscentScreen() {
           <Text style={styles.username}>@{ascent.user.username}</Text>
         </View>
         <Text style={styles.timestamp}>{formatTimestamp(ascent.logged_at)}</Text>
-      </Pressable>
+      </AccessiblePressable>
 
       {/* Photo carousel */}
       {ascent.photo_urls.length > 0 && (
@@ -169,7 +171,7 @@ export default function AscentScreen() {
       )}
 
       {/* Problem card — tappable */}
-      <Pressable
+      <AccessiblePressable
         style={styles.problemCard}
         onPress={() =>
           router.push({
@@ -177,6 +179,8 @@ export default function AscentScreen() {
             params: { id: ascent.problem.id },
           })
         }
+        accessibilityLabel={`Open problem at ${ascent.problem.gym.name}, grade ${ascent.problem.consensus_grade ?? 'ungraded'}`}
+        accessibilityRole="button"
       >
         <View
           style={[styles.colourSwatch, { backgroundColor: ascent.problem.colour }]}
@@ -188,7 +192,7 @@ export default function AscentScreen() {
           <Text style={styles.gymName}>{ascent.problem.gym.name}</Text>
         </View>
         <Text style={styles.chevron}>{'\u203A'}</Text>
-      </Pressable>
+      </AccessiblePressable>
 
       {/* Ascent type badge + user grade */}
       <View style={styles.detailSection}>

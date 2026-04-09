@@ -1,6 +1,7 @@
-import { Dimensions, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Image, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 import type { DiscoveryTile } from '../searchTypes';
@@ -8,6 +9,22 @@ import type { DiscoveryTile } from '../searchTypes';
 interface DiscoveryGridProps {
   tiles: DiscoveryTile[];
   onTilePress?: (tile: DiscoveryTile) => void;
+}
+
+function tileAccessibilityLabel(tile: DiscoveryTile): string {
+  switch (tile.type) {
+    case 'featured_climb':
+      return `Featured climb: ${tile.problemName ?? 'unnamed'}, grade ${tile.grade ?? 'unknown'}`;
+    case 'gym_spotlight':
+      return `Gym spotlight: ${tile.gymName ?? 'unknown gym'}`;
+    case 'tall_video':
+      return `Featured video clip`;
+    case 'featured_athlete':
+      return `Featured athlete: ${tile.athlete?.username ?? 'unknown'}`;
+    case 'standard':
+    default:
+      return 'Discover climb';
+  }
 }
 
 const GAP = spacing.sm; // 8px gap between tiles
@@ -47,9 +64,11 @@ export function DiscoveryGrid({ tiles, onTilePress }: DiscoveryGridProps) {
       <View style={[styles.row, { height: COL2 }]}>
         {/* Featured 2×2 */}
         {featured && (
-          <Pressable
+          <AccessiblePressable
             style={[styles.tile, { width: COL2, height: COL2 }]}
             onPress={() => onTilePress?.(featured)}
+            accessibilityLabel={tileAccessibilityLabel(featured)}
+            accessibilityRole="button"
           >
             <Image source={{ uri: featured.imageUrl! }} style={styles.fill} />
             <LinearGradient
@@ -71,30 +90,34 @@ export function DiscoveryGrid({ tiles, onTilePress }: DiscoveryGridProps) {
                 />
               </View>
             )}
-          </Pressable>
+          </AccessiblePressable>
         )}
 
         {/* Right column: gym spotlight (top) + standard (bottom) */}
         <View style={[styles.col, { width: COL, height: COL2, marginLeft: GAP }]}>
           {gymSpot && (
-            <Pressable
+            <AccessiblePressable
               style={[styles.tile, { width: COL, height: COL, overflow: 'hidden' }]}
               onPress={() => onTilePress?.(gymSpot)}
+              accessibilityLabel={tileAccessibilityLabel(gymSpot)}
+              accessibilityRole="button"
             >
               <View style={styles.gymSpotInner}>
                 <MaterialCommunityIcons name="dumbbell" size={20} color={colors.primary} />
                 <Text style={styles.gymLabel}>GYM{'\n'}SPOTLIGHT</Text>
                 <Text style={styles.gymName}>{gymSpot.gymName}</Text>
               </View>
-            </Pressable>
+            </AccessiblePressable>
           )}
           {standards[0] && (
-            <Pressable
+            <AccessiblePressable
               style={[styles.tile, { width: COL, height: COL, marginTop: GAP }]}
-              onPress={() => onTilePress?.(standards[0])}
+              onPress={() => onTilePress?.(standards[0]!)}
+              accessibilityLabel={tileAccessibilityLabel(standards[0])}
+              accessibilityRole="button"
             >
               <Image source={{ uri: standards[0].imageUrl! }} style={styles.fill} />
-            </Pressable>
+            </AccessiblePressable>
           )}
         </View>
       </View>
@@ -106,56 +129,66 @@ export function DiscoveryGrid({ tiles, onTilePress }: DiscoveryGridProps) {
           {/* Top row: 2 standards */}
           <View style={styles.row}>
             {standards[1] && (
-              <Pressable
+              <AccessiblePressable
                 style={[styles.tile, { width: COL, height: COL }]}
-                onPress={() => onTilePress?.(standards[1])}
+                onPress={() => onTilePress?.(standards[1]!)}
+                accessibilityLabel={tileAccessibilityLabel(standards[1])}
+                accessibilityRole="button"
               >
                 <Image source={{ uri: standards[1].imageUrl! }} style={styles.fill} />
-              </Pressable>
+              </AccessiblePressable>
             )}
             {standards[2] && (
-              <Pressable
+              <AccessiblePressable
                 style={[styles.tile, { width: COL, height: COL, marginLeft: GAP }]}
-                onPress={() => onTilePress?.(standards[2])}
+                onPress={() => onTilePress?.(standards[2]!)}
+                accessibilityLabel={tileAccessibilityLabel(standards[2])}
+                accessibilityRole="button"
               >
                 <Image source={{ uri: standards[2].imageUrl! }} style={styles.fill} />
-              </Pressable>
+              </AccessiblePressable>
             )}
           </View>
           {/* Bottom row: 1 standard (left), gap (right) */}
           <View style={[styles.row, { marginTop: GAP }]}>
             {standards[3] && (
-              <Pressable
+              <AccessiblePressable
                 style={[styles.tile, { width: COL, height: COL }]}
-                onPress={() => onTilePress?.(standards[3])}
+                onPress={() => onTilePress?.(standards[3]!)}
+                accessibilityLabel={tileAccessibilityLabel(standards[3])}
+                accessibilityRole="button"
               >
                 <Image source={{ uri: standards[3].imageUrl! }} style={styles.fill} />
-              </Pressable>
+              </AccessiblePressable>
             )}
           </View>
         </View>
 
         {/* Right col: tall video (spans full group height) */}
         {tallVideo && (
-          <Pressable
+          <AccessiblePressable
             style={[styles.tile, { width: COL, height: COL2, marginLeft: GAP }]}
             onPress={() => onTilePress?.(tallVideo)}
+            accessibilityLabel={tileAccessibilityLabel(tallVideo)}
+            accessibilityRole="button"
           >
             <Image source={{ uri: tallVideo.imageUrl! }} style={styles.fill} />
             <View style={styles.videoOverlay} />
             <View style={styles.playCenter}>
               <MaterialCommunityIcons name="play" size={36} color="#fff" />
             </View>
-          </Pressable>
+          </AccessiblePressable>
         )}
       </View>
 
       {/* ── Row group C: featured athlete + standard ─────────────────── */}
       <View style={[styles.row, { marginTop: GAP }]}>
         {athlete && (
-          <Pressable
+          <AccessiblePressable
             style={[styles.tile, styles.athleteCard, { width: COL2, height: COL }]}
             onPress={() => onTilePress?.(athlete)}
+            accessibilityLabel={tileAccessibilityLabel(athlete)}
+            accessibilityRole="button"
           >
             <Image source={{ uri: athlete.athlete!.avatarUrl }} style={styles.athleteAvatar} />
             <View style={styles.athleteInfo}>
@@ -165,28 +198,32 @@ export function DiscoveryGrid({ tiles, onTilePress }: DiscoveryGridProps) {
             <View style={styles.followBtn}>
               <Text style={styles.followBtnText}>Follow</Text>
             </View>
-          </Pressable>
+          </AccessiblePressable>
         )}
         {standards[4] && (
-          <Pressable
+          <AccessiblePressable
             style={[styles.tile, { width: COL, height: COL, marginLeft: GAP }]}
-            onPress={() => onTilePress?.(standards[4])}
+            onPress={() => onTilePress?.(standards[4]!)}
+            accessibilityLabel={tileAccessibilityLabel(standards[4])}
+            accessibilityRole="button"
           >
             <Image source={{ uri: standards[4].imageUrl! }} style={styles.fill} />
-          </Pressable>
+          </AccessiblePressable>
         )}
       </View>
 
       {/* ── Row group D: 3 standard tiles ───────────────────────────── */}
       <View style={[styles.row, { marginTop: GAP }]}>
         {standards.slice(5, 8).map((tile, i) => (
-          <Pressable
+          <AccessiblePressable
             key={tile.id}
             style={[styles.tile, { width: COL, height: COL, marginLeft: i > 0 ? GAP : 0 }]}
             onPress={() => onTilePress?.(tile)}
+            accessibilityLabel={tileAccessibilityLabel(tile)}
+            accessibilityRole="button"
           >
             <Image source={{ uri: tile.imageUrl! }} style={styles.fill} />
-          </Pressable>
+          </AccessiblePressable>
         ))}
       </View>
     </View>

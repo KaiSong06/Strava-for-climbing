@@ -1,9 +1,9 @@
-import { useCallback, useState } from 'react';
+import { lazy, Suspense, useCallback } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   Image,
-  Pressable,
+  Platform,
   RefreshControl,
   StyleSheet,
   Text,
@@ -11,11 +11,21 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { api } from '@/src/lib/api';
 import { useAuthStore } from '@/src/stores/authStore';
-import { HolographicModelViewer } from '@/src/components/HolographicModelViewer';
 import { colors } from '@/src/theme/colors';
 import type { PaginatedResponse, AscentType } from '../../../shared/types';
+
+// expo-gl / expo-three are native-only — lazy import to prevent web bundle crash
+const HolographicModelViewer =
+  Platform.OS !== 'web'
+    ? lazy(() =>
+        import('@/src/components/HolographicModelViewer/HolographicModelViewer').then((m) => ({
+          default: m.HolographicModelViewer,
+        })),
+      )
+    : () => null;
 
 interface ProblemDetail {
   id: string;
@@ -158,14 +168,16 @@ export default function ProblemDetailScreen() {
         </View>
       </View>
 
-      {/* 3D Holographic Model */}
-      {problem.model_url && (
+      {/* 3D Holographic Model (native only — expo-gl doesn't support web) */}
+      {problem.model_url && Platform.OS !== 'web' && (
         <View style={styles.modelSection}>
           <Text style={styles.modelLabel}>3D View</Text>
-          <HolographicModelViewer
-            modelUrl={problem.model_url}
-            holdColour={problem.colour}
-          />
+          <Suspense fallback={<ActivityIndicator size="large" color={colors.primary} />}>
+            <HolographicModelViewer
+              modelUrl={problem.model_url}
+              holdColour={problem.colour}
+            />
+          </Suspense>
         </View>
       )}
 
@@ -197,14 +209,15 @@ export default function ProblemDetailScreen() {
 
       {/* Log this climb */}
       {problem.status === 'active' && (
-        <Pressable
+        <AccessiblePressable
+          accessibilityLabel="Log this climb"
           style={styles.logBtn}
           onPress={() =>
             router.push({ pathname: '/log-ascent/[problemId]', params: { problemId: problem.id } })
           }
         >
           <Text style={styles.logBtnText}>Log this climb</Text>
-        </Pressable>
+        </AccessiblePressable>
       )}
 
       {/* Ascents header */}
@@ -223,7 +236,9 @@ export default function ProblemDetailScreen() {
         const badge = TYPE_BADGE[item.type];
         const initial = item.user.display_name[0]?.toUpperCase() ?? '?';
         return (
-          <Pressable
+          <AccessiblePressable
+            accessibilityLabel={`${badge.label} by ${item.user.display_name}`}
+            accessibilityHint="Opens user profile"
             style={styles.ascentRow}
             onPress={() =>
               router.push({
@@ -254,7 +269,7 @@ export default function ProblemDetailScreen() {
               {item.user_grade && <Text style={styles.ascentGrade}>{item.user_grade}</Text>}
               {item.rating && <Text style={styles.ascentRating}>{'★'.repeat(item.rating)}</Text>}
             </View>
-          </Pressable>
+          </AccessiblePressable>
         );
       }}
       ListHeaderComponent={header}

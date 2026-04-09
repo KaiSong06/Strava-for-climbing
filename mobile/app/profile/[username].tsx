@@ -2,7 +2,6 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -10,6 +9,7 @@ import {
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { api } from '@/src/lib/api';
 import { FollowButton } from '@/src/components/FollowButton';
 import { FeedCard } from '@/src/components/FeedCard';
@@ -33,7 +33,8 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
       <Text style={styles.usernameText}>@{profile.username}</Text>
 
       <View style={styles.statsRow}>
-        <Pressable
+        <AccessiblePressable
+          accessibilityLabel={`${profile.follower_count} followers`}
           style={styles.statItem}
           onPress={() =>
             router.push({
@@ -44,9 +45,10 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
         >
           <Text style={styles.statNumber}>{profile.follower_count}</Text>
           <Text style={styles.statLabel}>Followers</Text>
-        </Pressable>
+        </AccessiblePressable>
         <View style={styles.statDivider} />
-        <Pressable
+        <AccessiblePressable
+          accessibilityLabel={`${profile.following_count} following`}
           style={styles.statItem}
           onPress={() =>
             router.push({
@@ -57,7 +59,7 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
         >
           <Text style={styles.statNumber}>{profile.following_count}</Text>
           <Text style={styles.statLabel}>Following</Text>
-        </Pressable>
+        </AccessiblePressable>
       </View>
 
       {!isOwnProfile && (

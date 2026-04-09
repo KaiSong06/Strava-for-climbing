@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   RefreshControl,
   ScrollView,
   SectionList,
@@ -14,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { AccessiblePressable } from '@/src/components/ui/AccessiblePressable';
 import { api } from '@/src/lib/api';
 import { ProblemCard } from '@/src/components/ProblemCard';
 import { CruxBanner, BANNER_HEIGHT } from '@/src/components/CruxBanner';
@@ -120,13 +120,14 @@ export default function GymDetailScreen() {
       {gym && (
         <View style={styles.gymHeader}>
           {/* Back button */}
-          <Pressable
+          <AccessiblePressable
+            accessibilityLabel="Go back"
             style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.7 }]}
             onPress={() => router.back()}
             hitSlop={8}
           >
             <MaterialCommunityIcons name="arrow-left" size={20} color={colors.onSurface} />
-          </Pressable>
+          </AccessiblePressable>
 
           <Text style={styles.gymName}>{gym.name}</Text>
           <Text style={styles.gymCity}>{gym.city}</Text>
@@ -147,15 +148,18 @@ export default function GymDetailScreen() {
       {/* Tab toggle */}
       <View style={styles.tabRow}>
         {(['current', 'past'] as Tab[]).map((tab) => (
-          <Pressable
+          <AccessiblePressable
             key={tab}
+            accessibilityRole="tab"
+            accessibilityLabel={tab === 'current' ? 'Current problems' : 'Past problems'}
+            accessibilityState={{ selected: activeTab === tab }}
             style={[styles.tab, activeTab === tab && styles.tabActive]}
             onPress={() => setActiveTab(tab)}
           >
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
               {tab === 'current' ? 'Current' : 'Past'}
             </Text>
-          </Pressable>
+          </AccessiblePressable>
         ))}
       </View>
     </View>
