@@ -116,7 +116,9 @@ services:
       retries: 10
 
   api:
-    build: ./api
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "3001:3001"
     environment:
@@ -144,8 +146,10 @@ services:
         condition: service_completed_successfully
 
   vision-worker:
-    build: ./api
-    command: node dist/src/jobs/visionWorker.js
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: node dist/api/src/jobs/visionWorker.js
     environment:
       DATABASE_URL: postgres://crux:crux@postgres:5432/crux
       REDIS_URL: redis://redis:6379

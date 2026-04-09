@@ -1,6 +1,6 @@
 build:
   docker:
-    web: api/Dockerfile
-    worker: api/Dockerfile
+    web: Dockerfile
+    worker: Dockerfile
 run:
-  worker: node dist/src/jobs/visionWorker.js
+  worker: node dist/api/src/jobs/visionWorker.js

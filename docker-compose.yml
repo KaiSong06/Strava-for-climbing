@@ -6,7 +6,9 @@ services:
     restart: unless-stopped
 
   api:
-    build: ./api
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "3001:3001"
     env_file: ./api/.env
@@ -25,8 +27,10 @@ services:
     restart: unless-stopped
 
   vision-worker:
-    build: ./api
-    command: node dist/jobs/visionWorker.js
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: node dist/api/src/jobs/visionWorker.js
     env_file: ./api/.env
     environment:
       REDIS_URL: redis://redis:6379

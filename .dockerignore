@@ -1,0 +1,40 @@
+# Build artifacts + dependencies — always regenerated inside the image
+**/node_modules
+**/dist
+**/.expo
+**/*.tsbuildinfo
+**/coverage
+
+# Secrets — never ship these
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Logs
+**/*.log
+
+# Version control + tooling
+.git
+.gitignore
+.github
+.claude
+.vscode
+.idea
+
+# Everything outside api/ + shared/ that the api Dockerfile doesn't need
+mobile
+vision
+docs
+UI_References
+test
+db
+supabase
+heroku.yml
+docker-compose*.yml
+README.md
+CLAUDE.md
+*.md
+
+# OS
+.DS_Store
+Thumbs.db
