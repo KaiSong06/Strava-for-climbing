@@ -8,7 +8,7 @@ interface FollowState {
   /** Whether the initial load from the API has completed */
   isLoaded: boolean;
 
-  /** Populate followingIds from GET /users/:username/following (first page, limit 200) */
+  /** Populate followingIds from GET /users/:username/following (paginated, up to 100 per page) */
   load: (username: string) => Promise<void>;
   /** Optimistically follow a user, then call the API; rolls back on failure */
   follow: (username: string, userId: string) => Promise<void>;
@@ -24,13 +24,25 @@ export const useFollowStore = create<FollowState>()((set, get) => ({
 
   load: async (username: string) => {
     try {
-      const result = await api.get<PaginatedResponse<UserProfile>>(
-        `/users/${username}/following?limit=200`,
-      );
+      // Paginate through all following (API max is 100 per page)
       const ids: Record<string, true> = {};
-      for (const u of result.data) {
-        ids[u.id] = true;
+      let cursor: string | undefined;
+      let hasMore = true;
+
+      while (hasMore) {
+        const params = cursor
+          ? `?limit=100&cursor=${cursor}`
+          : '?limit=100';
+        const result = await api.get<PaginatedResponse<UserProfile>>(
+          `/users/${username}/following${params}`,
+        );
+        for (const u of result.data) {
+          ids[u.id] = true;
+        }
+        hasMore = result.has_more;
+        cursor = result.cursor ?? undefined;
       }
+
       set({ followingIds: ids, isLoaded: true });
     } catch {
       set({ isLoaded: true });
